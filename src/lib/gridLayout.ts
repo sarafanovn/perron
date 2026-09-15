@@ -139,3 +139,62 @@ export function reconcileLayout(
 
   return changed ? result : layout
 }
+
+function rectanglesOverlap(
+  aCol: number,
+  aRow: number,
+  aColSpan: number,
+  aRowSpan: number,
+  bCol: number,
+  bRow: number,
+  bColSpan: number,
+  bRowSpan: number
+): boolean {
+  const colOverlap = aCol < bCol + bColSpan && aCol + aColSpan > bCol
+  const rowOverlap = aRow < bRow + bRowSpan && aRow + aRowSpan > bRow
+  return colOverlap && rowOverlap
+}
+
+/**
+ * Resizes one widget in place (its top-left col/row stays put; only
+ * colSpan/rowSpan change), clamping col/row back on-grid if the new span
+ * would otherwise push it out of bounds. Any other widget now overlapping
+ * the resized rectangle is displaced to the first free slot elsewhere in
+ * the grid — mirroring reconcileLayout's approach — so growing a widget
+ * shuffles its neighbors instead of silently overlapping them. A displaced
+ * widget with nowhere left to fit is left at its (now-overlapping) position,
+ * same fallback reconcileLayout uses, rather than being lost.
+ */
+export function resizeWidget(
+  layout: WidgetLayoutEntry[],
+  widgetId: WidgetId,
+  colSpan: number,
+  rowSpan: number,
+  columns: number,
+  rows: number
+): WidgetLayoutEntry[] {
+  const target = layout.find((w) => w.widgetId === widgetId)
+  if (!target) return layout
+  if (target.colSpan === colSpan && target.rowSpan === rowSpan) return layout
+
+  const col = Math.max(0, Math.min(target.col, columns - colSpan))
+  const row = Math.max(0, Math.min(target.row, rows - rowSpan))
+
+  const resizedTarget: WidgetLayoutEntry = { ...target, col, row, colSpan, rowSpan }
+  const displaced = layout.filter(
+    (w) =>
+      w.widgetId !== widgetId &&
+      rectanglesOverlap(col, row, colSpan, rowSpan, w.col, w.row, w.colSpan, w.rowSpan)
+  )
+  const untouched = layout.filter(
+    (w) => w.widgetId !== widgetId && !displaced.includes(w)
+  )
+
+  const result: WidgetLayoutEntry[] = [resizedTarget, ...untouched]
+  for (const entry of displaced) {
+    const slot = findFirstFreeSlot(result, entry.colSpan, entry.rowSpan, columns, rows)
+    result.push(slot ? { ...entry, col: slot.col, row: slot.row } : entry)
+  }
+
+  return result
+}

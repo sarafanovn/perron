@@ -35,9 +35,73 @@
 .widget-grid .widget-cell {
   position: relative;
   z-index: 1;
-  transition: transform var(--transition-spring);
+  transition: transform var(--transition-spring), width var(--transition-spring), height var(--transition-spring);
 }
 
 .widget-grid .widget-cell.dragging {
   opacity: 0.5;
+}
+
+.widget-grid .widget-cell.resizing {
+  transition: none;
+}
+
+@keyframes jiggle-a {
+  0%, 100% { transform: rotate(-1deg); }
+  50% { transform: rotate(1deg); }
+}
+
+@keyframes jiggle-b {
+  0%, 100% { transform: rotate(1deg); }
+  50% { transform: rotate(-1deg); }
+}
+
+.widget-grid .widget-cell.edit-mode.jiggle-a {
+  animation: jiggle-a 0.15s infinite ease-in-out;
+}
+
+.widget-grid .widget-cell.edit-mode.jiggle-b {
+  animation: jiggle-b 0.16s infinite ease-in-out;
+}
+
+.widget-grid .widget-cell.edit-mode.resizing {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget-grid .widget-cell.edit-mode.jiggle-a,
+  .widget-grid .widget-cell.edit-mode.jiggle-b {
+    animation: none;
+    outline: 2px dashed rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+  }
+}
+
+.resize-handle {
+  position: absolute;
+  z-index: 3;
+}
+
+.resize-handle-e {
+  top: 12px;
+  right: -6px;
+  bottom: 12px;
+  width: 12px;
+  cursor: ew-resize;
+}
+
+.resize-handle-s {
+  left: 12px;
+  right: 12px;
+  bottom: -6px;
+  height: 12px;
+  cursor: ns-resize;
+}
+
+.resize-handle-se {
+  right: -6px;
+  bottom: -6px;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
 }

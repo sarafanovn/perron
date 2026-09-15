@@ -3,17 +3,28 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 import { SettingsProvider, useSettings } from './SettingsContext'
 
 function Consumer() {
-  const { settings, update, isAdjustingGrid, setIsAdjustingGrid, pingGridAdjustment } = useSettings()
+  const {
+    settings,
+    update,
+    isAdjustingGrid,
+    setIsAdjustingGrid,
+    pingGridAdjustment,
+    isEditMode,
+    setIsEditMode,
+  } = useSettings()
   return (
     <div>
       <span data-testid="engine">{settings.search.engine}</span>
       <span data-testid="adjusting">{String(isAdjustingGrid)}</span>
+      <span data-testid="editing">{String(isEditMode)}</span>
       <button onClick={() => update((s) => ({ ...s, search: { engine: 'bing' } }))}>
         change
       </button>
       <button onClick={() => setIsAdjustingGrid(true)}>start adjusting</button>
       <button onClick={() => setIsAdjustingGrid(false)}>stop adjusting</button>
       <button onClick={() => pingGridAdjustment()}>ping</button>
+      <button onClick={() => setIsEditMode(true)}>start editing</button>
+      <button onClick={() => setIsEditMode(false)}>stop editing</button>
     </div>
   )
 }
@@ -63,6 +74,19 @@ describe('SettingsProvider', () => {
     expect(screen.getByTestId('adjusting').textContent).toBe('true')
     fireEvent.click(screen.getByText('stop adjusting'))
     expect(screen.getByTestId('adjusting').textContent).toBe('false')
+  })
+
+  it('defaults isEditMode to false and lets consumers toggle it', () => {
+    render(
+      <SettingsProvider>
+        <Consumer />
+      </SettingsProvider>
+    )
+    expect(screen.getByTestId('editing').textContent).toBe('false')
+    fireEvent.click(screen.getByText('start editing'))
+    expect(screen.getByTestId('editing').textContent).toBe('true')
+    fireEvent.click(screen.getByText('stop editing'))
+    expect(screen.getByTestId('editing').textContent).toBe('false')
   })
 
   describe('pingGridAdjustment', () => {

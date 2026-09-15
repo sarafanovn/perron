@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { moveWidget, findWidgetAt, findFirstFreeCell, findFirstFreeSlot, reconcileLayout } from './gridLayout'
+import {
+  moveWidget,
+  findWidgetAt,
+  findFirstFreeCell,
+  findFirstFreeSlot,
+  reconcileLayout,
+  resizeWidget,
+} from './gridLayout'
 import type { WidgetLayoutEntry } from './types'
 
 const layout: WidgetLayoutEntry[] = [
@@ -161,5 +168,80 @@ describe('reconcileLayout', () => {
     const tiny: WidgetLayoutEntry[] = [{ widgetId: 'search', col: 0, row: 0, colSpan: 4, rowSpan: 1 }]
     const result = reconcileLayout(tiny, 2, 8) // 4-wide widget can never fit in a 2-column grid
     expect(result).toEqual(tiny)
+  })
+})
+
+describe('resizeWidget', () => {
+  it('grows a widget into empty space without displacing anyone', () => {
+    const sparse: WidgetLayoutEntry[] = [
+      { widgetId: 'search', col: 0, row: 0, colSpan: 4, rowSpan: 1 },
+    ]
+    const result = resizeWidget(sparse, 'search', 4, 2, COLUMNS, ROWS)
+    const search = result.find((w) => w.widgetId === 'search')!
+    expect(search.colSpan).toBe(4)
+    expect(search.rowSpan).toBe(2)
+    expect(search.col).toBe(0)
+    expect(search.row).toBe(0)
+  })
+
+  it('displaces an overlapping widget to the first free slot', () => {
+    // shortcut sits directly below weather at col 0-1, row 3-4; growing
+    // weather from 2x2 to 2x4 (rows 1-4) now overlaps it.
+    const base: WidgetLayoutEntry[] = [
+      { widgetId: 'weather', col: 0, row: 1, colSpan: 2, rowSpan: 2 },
+      { widgetId: 'shortcut:a', col: 0, row: 3, colSpan: 1, rowSpan: 1 },
+    ]
+    const result = resizeWidget(base, 'weather', 2, 4, COLUMNS, ROWS)
+    const weather = result.find((w) => w.widgetId === 'weather')!
+    const shortcut = result.find((w) => w.widgetId === 'shortcut:a')!
+    expect(weather).toEqual({ widgetId: 'weather', col: 0, row: 1, colSpan: 2, rowSpan: 4 })
+    // no longer overlapping weather's new rectangle
+    const overlaps =
+      shortcut.col < weather.col + weather.colSpan &&
+      shortcut.col + shortcut.colSpan > weather.col &&
+      shortcut.row < weather.row + weather.rowSpan &&
+      shortcut.row + shortcut.rowSpan > weather.row
+    expect(overlaps).toBe(false)
+  })
+
+  it('shrinking a widget needs no displacement', () => {
+    const result = resizeWidget(layout, 'weather', 1, 1, COLUMNS, ROWS)
+    const weather = result.find((w) => w.widgetId === 'weather')!
+    expect(weather.colSpan).toBe(1)
+    expect(weather.rowSpan).toBe(1)
+    const shortcuts = result.find((w) => w.widgetId === 'shortcuts')!
+    expect(shortcuts).toEqual(layout[2])
+  })
+
+  it('clamps col/row back on-grid when growing would push past the edge', () => {
+    const base: WidgetLayoutEntry[] = [
+      { widgetId: 'shortcut:a', col: 3, row: 0, colSpan: 1, rowSpan: 1 },
+    ]
+    const result = resizeWidget(base, 'shortcut:a', 2, 1, COLUMNS, ROWS)
+    const shortcut = result.find((w) => w.widgetId === 'shortcut:a')!
+    expect(shortcut.col).toBe(2) // clamped so col + colSpan (2) <= COLUMNS (4)
+    expect(shortcut.colSpan).toBe(2)
+  })
+
+  it('leaves a displaced widget in place if nowhere else fits it', () => {
+    // A tightly packed 2-column, 2-row grid: growing 'a' to fill the whole
+    // grid leaves 'b' nowhere to go.
+    const packed: WidgetLayoutEntry[] = [
+      { widgetId: 'a', col: 0, row: 0, colSpan: 1, rowSpan: 1 },
+      { widgetId: 'b', col: 1, row: 0, colSpan: 1, rowSpan: 1 },
+    ]
+    const result = resizeWidget(packed, 'a', 2, 2, 2, 2)
+    const b = result.find((w) => w.widgetId === 'b')!
+    expect(b).toEqual(packed[1])
+  })
+
+  it('returns the same reference when the size does not change', () => {
+    const result = resizeWidget(layout, 'weather', 2, 2, COLUMNS, ROWS)
+    expect(result).toBe(layout)
+  })
+
+  it('returns the layout unchanged for an unknown widget id', () => {
+    const result = resizeWidget(layout, 'missing', 2, 2, COLUMNS, ROWS)
+    expect(result).toBe(layout)
   })
 })

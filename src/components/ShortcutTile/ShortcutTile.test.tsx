@@ -16,9 +16,14 @@ describe('ShortcutTile', () => {
     expect(link).toHaveAttribute('href', 'https://github.com')
   })
 
-  it('calls onRemove with the shortcut id when the remove control is clicked', () => {
+  it('does not show a remove control outside edit mode', () => {
+    render(<ShortcutTile shortcut={shortcut} onRemove={() => {}} />)
+    expect(screen.queryByLabelText('Remove GitHub')).not.toBeInTheDocument()
+  })
+
+  it('shows a remove control in edit mode and calls onRemove with the shortcut id when clicked', () => {
     const onRemove = vi.fn()
-    render(<ShortcutTile shortcut={shortcut} onRemove={onRemove} />)
+    render(<ShortcutTile shortcut={shortcut} onRemove={onRemove} editMode />)
     fireEvent.click(screen.getByLabelText('Remove GitHub'))
     expect(onRemove).toHaveBeenCalledWith('abc')
   })

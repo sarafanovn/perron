@@ -17,6 +17,10 @@ interface SettingsContextValue {
   // the pointer is physically held down — a track-click resolves in a
   // single press+release pair too fast for the overlay to be seen otherwise.
   pingGridAdjustment: () => void
+  // Transient UI flag (never persisted): true while the grid is in
+  // iPhone-style "edit mode" (jiggle, delete badges, resize handles).
+  isEditMode: boolean
+  setIsEditMode: (value: boolean) => void
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null)
@@ -38,6 +42,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => loadSettings())
   const [saveError, setSaveError] = useState<string | null>(null)
   const [isAdjustingGrid, setIsAdjustingGrid] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
   const gridPingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function pingGridAdjustment() {
@@ -69,7 +74,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   return (
     <SettingsContext.Provider
-      value={{ settings, update, saveError, isAdjustingGrid, setIsAdjustingGrid, pingGridAdjustment }}
+      value={{
+        settings,
+        update,
+        saveError,
+        isAdjustingGrid,
+        setIsAdjustingGrid,
+        pingGridAdjustment,
+        isEditMode,
+        setIsEditMode,
+      }}
     >
       {children}
     </SettingsContext.Provider>
