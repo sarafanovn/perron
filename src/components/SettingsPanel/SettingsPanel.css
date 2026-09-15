@@ -1,16 +1,30 @@
 .settings-panel {
   position: fixed;
-  top: 0;
-  right: 0;
+  bottom: 80px;
+  right: 24px;
   width: 320px;
-  height: 100vh;
+  max-height: calc(100vh - 104px);
   background: var(--color-bg-surface-solid);
+  border-radius: var(--radius-widget);
   box-shadow: var(--shadow-widget);
   padding: 24px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  z-index: 30;
+  animation: settings-panel-in var(--transition-spring);
+}
+
+@keyframes settings-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .settings-panel h3 {

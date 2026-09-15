@@ -35,8 +35,12 @@ export function WidgetGrid() {
     setDraggingId(null)
   }
 
+  function handleDragEnd() {
+    setDraggingId(null)
+  }
+
   return (
-    <div className="widget-grid">
+    <div className={`widget-grid${draggingId ? ' dragging-active' : ''}`}>
       {settings.widgetLayout.map((entry) => {
         const Widget = WIDGET_COMPONENTS[entry.widgetId]
         return (
@@ -54,6 +58,7 @@ export function WidgetGrid() {
             onDragStart={() => handleDragStart(entry.widgetId)}
             onDragOver={handleDragOver}
             onDrop={() => handleDrop(entry.widgetId)}
+            onDragEnd={handleDragEnd}
           >
             <Widget />
           </div>

@@ -1,12 +1,28 @@
 .widget-grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, 220px);
   grid-auto-rows: 100px;
   gap: 20px;
-  padding: 40px;
+}
+
+.widget-grid.dragging-active::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.35) 1px, transparent 1px);
+  background-size: 240px 120px;
+  background-position: 20px 20px;
+  border-radius: var(--radius-widget);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .widget-grid .widget-cell {
+  position: relative;
+  z-index: 1;
   transition: transform var(--transition-spring);
 }
 
