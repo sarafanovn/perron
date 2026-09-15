@@ -62,6 +62,26 @@ describe('SettingsPanel', () => {
     expect(screen.getByText(/too large/i)).toBeInTheDocument()
   })
 
+  it('updates grid columns and persists it', () => {
+    render(
+      <SettingsProvider>
+        <SettingsPanel open={true} onClose={() => {}} />
+      </SettingsProvider>
+    )
+    fireEvent.change(screen.getByLabelText('Columns'), { target: { value: '16' } })
+    expect(loadSettings().grid.columns).toBe(16)
+  })
+
+  it('updates grid rows and persists it', () => {
+    render(
+      <SettingsProvider>
+        <SettingsPanel open={true} onClose={() => {}} />
+      </SettingsProvider>
+    )
+    fireEvent.change(screen.getByLabelText('Rows'), { target: { value: '10' } })
+    expect(loadSettings().grid.rows).toBe(10)
+  })
+
   it('calls onClose when the close button is clicked', () => {
     const onClose = vi.fn()
     render(

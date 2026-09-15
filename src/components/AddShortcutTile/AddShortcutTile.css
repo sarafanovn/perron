@@ -5,8 +5,6 @@
   justify-content: center;
   background: var(--color-bg-surface);
   backdrop-filter: blur(var(--blur-surface));
-  border-radius: var(--radius-widget);
-  box-shadow: var(--shadow-widget);
 }
 
 .add-shortcut-tile .open-form-btn {

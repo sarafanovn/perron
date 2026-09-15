@@ -11,6 +11,11 @@ const FONT_OPTIONS = [
   { id: "'Courier New', monospace", label: 'Monospace' },
 ]
 
+const MIN_COLUMNS = 4
+const MAX_COLUMNS = 24
+const MIN_ROWS = 3
+const MAX_ROWS = 16
+
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { settings, update, saveError } = useSettings()
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -34,6 +39,14 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
 
   function setSearchEngine(value: SearchEngineId) {
     update((current) => ({ ...current, search: { engine: value } }))
+  }
+
+  function setColumns(value: number) {
+    update((current) => ({ ...current, grid: { ...current.grid, columns: value } }))
+  }
+
+  function setRows(value: number) {
+    update((current) => ({ ...current, grid: { ...current.grid, rows: value } }))
   }
 
   function handleUpload(e: ChangeEvent<HTMLInputElement>) {
@@ -120,6 +133,32 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
             </option>
           ))}
         </select>
+      </div>
+
+      <div>
+        <h3>Grid density</h3>
+        <label>
+          Columns: {settings.grid.columns}
+          <input
+            aria-label="Columns"
+            type="range"
+            min={MIN_COLUMNS}
+            max={MAX_COLUMNS}
+            value={settings.grid.columns}
+            onChange={(e) => setColumns(Number(e.target.value))}
+          />
+        </label>
+        <label>
+          Rows: {settings.grid.rows}
+          <input
+            aria-label="Rows"
+            type="range"
+            min={MIN_ROWS}
+            max={MAX_ROWS}
+            value={settings.grid.rows}
+            onChange={(e) => setRows(Number(e.target.value))}
+          />
+        </label>
       </div>
 
       {saveError && <p role="alert">Couldn't save: {saveError}</p>}

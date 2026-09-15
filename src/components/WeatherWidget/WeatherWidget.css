@@ -3,8 +3,6 @@
   padding: 16px;
   background: var(--color-bg-surface);
   backdrop-filter: blur(var(--blur-surface));
-  border-radius: var(--radius-widget);
-  box-shadow: var(--shadow-widget);
   color: var(--color-text-primary);
   display: flex;
   flex-direction: column;

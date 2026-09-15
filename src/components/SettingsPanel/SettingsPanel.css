@@ -54,3 +54,19 @@
   background: transparent;
   font-size: 18px;
 }
+
+.settings-panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.settings-panel label + label {
+  margin-top: 10px;
+}
+
+.settings-panel input[type='range'] {
+  width: 100%;
+}

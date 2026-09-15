@@ -1,12 +1,32 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, fireEvent, createEvent } from '@testing-library/react'
 import { SettingsProvider } from '../../context/SettingsContext'
 import { WidgetGrid } from './WidgetGrid'
 import { loadSettings, saveSettings, DEFAULT_SETTINGS } from '../../lib/storage'
 import { widgetIdForShortcut } from '../../lib/shortcutWidgets'
 
+// With the default 12x8 grid and a mocked 1200x1000 viewport:
+// availableWidth = 1200 - 80 - 20*11 = 900, 900/12 = 75
+// availableHeight = 1000 - 80 - 20*7 = 780, 780/8 = 97.5
+// cellSize = min(75, 97.5) = 75
+const CELL_SIZE = 75
+const GAP = 20
+const PADDING = 40
+
+// jsdom/RTL's fireEvent.drop doesn't apply clientX/clientY from its init
+// object onto the resulting DragEvent, so they must be set directly via
+// defineProperty on a manually created event.
+function dropAt(target: Element, col: number, row: number) {
+  const event = createEvent.drop(target)
+  Object.defineProperty(event, 'clientX', { value: PADDING + col * (CELL_SIZE + GAP) + 10 })
+  Object.defineProperty(event, 'clientY', { value: PADDING + row * (CELL_SIZE + GAP) + 10 })
+  fireEvent(target, event)
+}
+
 beforeEach(() => {
   localStorage.clear()
+  vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1200)
+  vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1000)
 })
 
 describe('WidgetGrid', () => {
@@ -41,30 +61,43 @@ describe('WidgetGrid', () => {
     expect(screen.getByText('GitHub')).toBeInTheDocument()
   })
 
-  it('swaps two widgets on drag-and-drop and persists the new layout', () => {
-    render(
+  it('moves a widget to an empty cell under the drop point and persists it', () => {
+    const { container } = render(
       <SettingsProvider>
         <WidgetGrid />
       </SettingsProvider>
     )
 
-    const searchHandle = screen.getByTestId('widget-search')
+    const grid = container.querySelector('.widget-grid') as HTMLElement
+    // Default layout occupies row 0 (search, cols 0-3) and rows 1-2 (weather,
+    // cols 0-1). Column 5, row 5 is empty in a 12x8 grid.
     const weatherHandle = screen.getByTestId('widget-weather')
-
-    fireEvent.dragStart(searchHandle)
-    fireEvent.dragOver(weatherHandle)
-    fireEvent.drop(weatherHandle)
+    fireEvent.dragStart(weatherHandle)
+    dropAt(grid, 5, 5)
 
     const persisted = loadSettings().widgetLayout
-    const search = persisted.find((w) => w.widgetId === 'search')!
     const weather = persisted.find((w) => w.widgetId === 'weather')!
-    // search takes weather's old slot (and span) entirely, and vice versa
-    expect(search.col).toBe(0)
-    expect(search.row).toBe(1)
-    expect(search.colSpan).toBe(2)
-    expect(weather.col).toBe(0)
-    expect(weather.row).toBe(0)
-    expect(weather.colSpan).toBe(4)
+    expect(weather.col).toBe(5)
+    expect(weather.row).toBe(5)
+    expect(weather.colSpan).toBe(2)
+    expect(weather.rowSpan).toBe(2)
+  })
+
+  it('rejects a drop that would overlap another widget, leaving the layout unchanged', () => {
+    const { container } = render(
+      <SettingsProvider>
+        <WidgetGrid />
+      </SettingsProvider>
+    )
+
+    const grid = container.querySelector('.widget-grid') as HTMLElement
+    const before = loadSettings().widgetLayout
+    const weatherHandle = screen.getByTestId('widget-weather')
+    fireEvent.dragStart(weatherHandle)
+    // search occupies row 0, cols 0-3; dropping weather there should overlap and be rejected
+    dropAt(grid, 0, 0)
+
+    expect(loadSettings().widgetLayout).toEqual(before)
   })
 
   it('adds a new shortcut widget via the add-shortcut tile and persists it', () => {

@@ -1,24 +1,37 @@
 import type { WidgetId, WidgetLayoutEntry } from './types'
 
-export function swapWidgets(
+/**
+ * Moves one widget to a new top-left cell, keeping its own colSpan/rowSpan.
+ * Rejects (returns the layout unchanged) if the target rectangle would run
+ * off the grid's bounds or overlap any other widget's rectangle — free
+ * placement never bumps or swaps another widget out of the way.
+ */
+export function moveWidget(
   layout: WidgetLayoutEntry[],
-  draggedId: WidgetId,
-  targetId: WidgetId
+  widgetId: WidgetId,
+  targetCol: number,
+  targetRow: number,
+  columns: number,
+  rows: number
 ): WidgetLayoutEntry[] {
-  if (draggedId === targetId) return layout
-  const dragged = layout.find((w) => w.widgetId === draggedId)
-  const target = layout.find((w) => w.widgetId === targetId)
-  if (!dragged || !target) return layout
+  const moving = layout.find((w) => w.widgetId === widgetId)
+  if (!moving) return layout
+  if (targetCol === moving.col && targetRow === moving.row) return layout
 
-  return layout.map((entry) => {
-    if (entry.widgetId === draggedId) {
-      return { ...entry, col: target.col, row: target.row, colSpan: target.colSpan, rowSpan: target.rowSpan }
-    }
-    if (entry.widgetId === targetId) {
-      return { ...entry, col: dragged.col, row: dragged.row, colSpan: dragged.colSpan, rowSpan: dragged.rowSpan }
-    }
-    return entry
+  if (targetCol < 0 || targetRow < 0) return layout
+  if (targetCol + moving.colSpan > columns || targetRow + moving.rowSpan > rows) return layout
+
+  const overlapsAnother = layout.some((w) => {
+    if (w.widgetId === widgetId) return false
+    const colOverlap = targetCol < w.col + w.colSpan && targetCol + moving.colSpan > w.col
+    const rowOverlap = targetRow < w.row + w.rowSpan && targetRow + moving.rowSpan > w.row
+    return colOverlap && rowOverlap
   })
+  if (overlapsAnother) return layout
+
+  return layout.map((entry) =>
+    entry.widgetId === widgetId ? { ...entry, col: targetCol, row: targetRow } : entry
+  )
 }
 
 export function findWidgetAt(

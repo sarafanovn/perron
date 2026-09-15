@@ -2,11 +2,9 @@ import { findFirstFreeCell } from './gridLayout'
 import { widgetIdForShortcut } from './shortcutWidgets'
 import type { Settings, Shortcut } from './types'
 
-const GRID_COLUMNS = 4
-
 export function addShortcut(settings: Settings, shortcut: Omit<Shortcut, 'id'>): Settings {
   const newShortcut: Shortcut = { ...shortcut, id: crypto.randomUUID() }
-  const { col, row } = findFirstFreeCell(settings.widgetLayout, GRID_COLUMNS)
+  const { col, row } = findFirstFreeCell(settings.widgetLayout, settings.grid.columns)
   return {
     ...settings,
     shortcuts: [...settings.shortcuts, newShortcut],

@@ -12,6 +12,7 @@ const baseSettings: Settings = {
     { widgetId: 'search', col: 0, row: 0, colSpan: 4, rowSpan: 1 },
     { widgetId: 'weather', col: 0, row: 1, colSpan: 2, rowSpan: 2 },
   ],
+  grid: { columns: 4, rows: 8 },
 }
 
 describe('addShortcut', () => {

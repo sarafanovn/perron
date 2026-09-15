@@ -31,10 +31,16 @@ export interface WidgetLayoutEntry {
   rowSpan: number
 }
 
+export interface GridSettings {
+  columns: number
+  rows: number
+}
+
 export interface Settings {
   version: 1
   theme: ThemeSettings
   search: { engine: SearchEngineId }
   shortcuts: Shortcut[]
   widgetLayout: WidgetLayoutEntry[]
+  grid: GridSettings
 }

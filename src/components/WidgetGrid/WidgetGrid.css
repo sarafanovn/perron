@@ -1,20 +1,18 @@
 .widget-grid {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(4, 220px);
-  grid-auto-rows: 100px;
-  gap: 20px;
+  padding: 40px;
 }
 
 .widget-grid.dragging-active::before {
   content: '';
   position: absolute;
-  inset: -20px;
+  inset: calc(var(--grid-gap, 20px) * -1);
   background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.35) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.35) 1px, transparent 1px);
-  background-size: 240px 120px;
-  background-position: 20px 20px;
+  background-size: calc(var(--cell-size, 120px) + var(--grid-gap, 20px)) calc(var(--cell-size, 120px) + var(--grid-gap, 20px));
+  background-position: var(--grid-gap, 20px) var(--grid-gap, 20px);
   border-radius: var(--radius-widget);
   pointer-events: none;
   z-index: 0;

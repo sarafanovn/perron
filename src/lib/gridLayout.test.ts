@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { swapWidgets, findWidgetAt, findFirstFreeCell } from './gridLayout'
+import { moveWidget, findWidgetAt, findFirstFreeCell } from './gridLayout'
 import type { WidgetLayoutEntry } from './types'
 
 const layout: WidgetLayoutEntry[] = [
@@ -7,42 +7,54 @@ const layout: WidgetLayoutEntry[] = [
   { widgetId: 'weather', col: 0, row: 1, colSpan: 2, rowSpan: 2 },
   { widgetId: 'shortcuts', col: 2, row: 1, colSpan: 2, rowSpan: 2 },
 ]
+const COLUMNS = 4
+const ROWS = 8
 
-describe('swapWidgets', () => {
-  it('swaps the full position (col/row/colSpan/rowSpan) between two same-sized widgets', () => {
-    const result = swapWidgets(layout, 'weather', 'shortcuts')
+describe('moveWidget', () => {
+  it('moves a widget to a free cell, keeping its own span', () => {
+    const result = moveWidget(layout, 'weather', 0, 3, COLUMNS, ROWS)
     const weather = result.find((w) => w.widgetId === 'weather')!
-    const shortcuts = result.find((w) => w.widgetId === 'shortcuts')!
-    expect(weather.col).toBe(2)
-    expect(weather.row).toBe(1)
-    expect(weather.colSpan).toBe(2)
-    expect(shortcuts.col).toBe(0)
-    expect(shortcuts.row).toBe(1)
-  })
-
-  it('swaps the full position between differently-sized widgets without leaving overlapping spans', () => {
-    const result = swapWidgets(layout, 'search', 'weather')
-    const search = result.find((w) => w.widgetId === 'search')!
-    const weather = result.find((w) => w.widgetId === 'weather')!
-    // search takes weather's old slot entirely, including weather's span
-    expect(search.col).toBe(0)
-    expect(search.row).toBe(1)
-    expect(search.colSpan).toBe(2)
-    expect(search.rowSpan).toBe(2)
-    // weather takes search's old slot entirely, including search's span
     expect(weather.col).toBe(0)
-    expect(weather.row).toBe(0)
-    expect(weather.colSpan).toBe(4)
-    expect(weather.rowSpan).toBe(1)
+    expect(weather.row).toBe(3)
+    expect(weather.colSpan).toBe(2)
+    expect(weather.rowSpan).toBe(2)
   })
 
-  it('returns the same layout when dragging onto itself', () => {
-    const result = swapWidgets(layout, 'weather', 'weather')
+  it('does not move other widgets', () => {
+    const result = moveWidget(layout, 'weather', 0, 3, COLUMNS, ROWS)
+    const search = result.find((w) => w.widgetId === 'search')!
+    const shortcuts = result.find((w) => w.widgetId === 'shortcuts')!
+    expect(search).toEqual(layout[0])
+    expect(shortcuts).toEqual(layout[2])
+  })
+
+  it('rejects a move onto a cell occupied by another widget', () => {
+    const result = moveWidget(layout, 'weather', 2, 1, COLUMNS, ROWS)
     expect(result).toEqual(layout)
   })
 
-  it('leaves layout unchanged if either widget id is not found', () => {
-    const result = swapWidgets(layout, 'weather', 'nonexistent')
+  it('rejects a move that would run past the right edge of the grid', () => {
+    const result = moveWidget(layout, 'weather', 3, 3, COLUMNS, ROWS)
+    expect(result).toEqual(layout)
+  })
+
+  it('rejects a move that would run past the bottom edge of the grid', () => {
+    const result = moveWidget(layout, 'weather', 0, 7, COLUMNS, ROWS)
+    expect(result).toEqual(layout)
+  })
+
+  it('rejects a negative target position', () => {
+    const result = moveWidget(layout, 'weather', -1, 1, COLUMNS, ROWS)
+    expect(result).toEqual(layout)
+  })
+
+  it('returns the same layout when dropped on its own current cell', () => {
+    const result = moveWidget(layout, 'weather', 0, 1, COLUMNS, ROWS)
+    expect(result).toEqual(layout)
+  })
+
+  it('leaves the layout unchanged if the widget id is not found', () => {
+    const result = moveWidget(layout, 'nonexistent', 0, 3, COLUMNS, ROWS)
     expect(result).toEqual(layout)
   })
 })
