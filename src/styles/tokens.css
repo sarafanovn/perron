@@ -1,0 +1,25 @@
+:root {
+  --color-accent: #0a84ff;
+  --color-bg-surface: rgba(255, 255, 255, 0.55);
+  --color-bg-surface-solid: #f5f5f7;
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: rgba(60, 60, 67, 0.6);
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --radius-widget: 20px;
+  --shadow-widget: 0 8px 30px rgba(0, 0, 0, 0.12);
+  --blur-surface: 24px;
+  --transition-spring: 320ms cubic-bezier(0.32, 0.72, 0, 1);
+  --page-background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family-base);
+  color: var(--color-text-primary);
+  overflow: hidden;
+}
