@@ -26,7 +26,14 @@ function useCellSizePx(columns: number, rows: number): number {
       const availableWidth = window.innerWidth - GRID_PADDING_PX * 2 - GRID_GAP_PX * (columns - 1)
       const availableHeight = window.innerHeight - GRID_PADDING_PX * 2 - GRID_GAP_PX * (rows - 1)
       const size = Math.min(availableWidth / columns, availableHeight / rows)
-      setCellSize(Math.min(Math.max(size, MIN_CELL_SIZE_PX), MAX_CELL_SIZE_PX))
+      // Round to a whole pixel: the grid overlay's repeating-gradient period
+      // and the actual grid-template-columns/rows track size are computed
+      // from this same value independently. A fractional cellSize (e.g.
+      // 141.6667px) gets rounded slightly differently by each — the browser
+      // snaps rendered grid tracks to device pixels, while the gradient
+      // pattern uses the raw float — and that sub-pixel gap compounds across
+      // columns/rows until widgets visibly drift away from the grid lines.
+      setCellSize(Math.round(Math.min(Math.max(size, MIN_CELL_SIZE_PX), MAX_CELL_SIZE_PX)))
     }
     recalculate()
     window.addEventListener('resize', recalculate)
