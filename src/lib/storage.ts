@@ -87,6 +87,9 @@ export function updateSettings(
 ): { ok: true; settings: Settings } | { ok: false; error: string; settings: Settings } {
   const current = loadSettings()
   const next = patch(current)
+  if (next === current) {
+    return { ok: true, settings: current }
+  }
   const result = saveSettings(next)
   if (result.ok) {
     return { ok: true, settings: next }

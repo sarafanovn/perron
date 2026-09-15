@@ -32,7 +32,7 @@ describe('Squircle', () => {
     expect(getByText('content')).toBeInTheDocument()
   })
 
-  it('applies a clip-path style once size is measured', () => {
+  it('applies a clip-path style once size is measured for the squircle shape', () => {
     vi.stubGlobal('ResizeObserver', MockResizeObserver)
     const { container } = render(
       <Squircle>
@@ -41,5 +41,18 @@ describe('Squircle', () => {
     )
     const wrapper = container.querySelector('.squircle-wrapper') as HTMLElement
     expect(wrapper.style.clipPath).toContain('path(')
+  })
+
+  it('applies a pill border-radius instead of clip-path for the stadium shape', () => {
+    vi.stubGlobal('ResizeObserver', MockResizeObserver)
+    const { container } = render(
+      <Squircle shape="stadium">
+        <span>content</span>
+      </Squircle>
+    )
+    const wrapper = container.querySelector('.squircle-wrapper') as HTMLElement
+    expect(wrapper.style.borderRadius).toBe('9999px')
+    expect(wrapper.style.overflow).toBe('hidden')
+    expect(wrapper.style.clipPath).toBe('')
   })
 })

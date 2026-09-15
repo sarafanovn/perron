@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { useSettings } from '../../context/SettingsContext'
-import { moveWidget, findFirstFreeCell } from '../../lib/gridLayout'
+import { moveWidget, findFirstFreeCell, reconcileLayout } from '../../lib/gridLayout'
 import { addShortcut, removeShortcut } from '../../lib/shortcutActions'
 import { isShortcutWidgetId, shortcutIdFromWidgetId } from '../../lib/shortcutWidgets'
+import { shapeForWidget } from '../../lib/widgetShapes'
 import type { WidgetId } from '../../lib/types'
 import { SearchWidget } from '../SearchWidget/SearchWidget'
 import { WeatherWidget } from '../WeatherWidget/WeatherWidget'
@@ -13,6 +14,8 @@ import './WidgetGrid.css'
 
 const GRID_GAP_PX = 20
 const GRID_PADDING_PX = 40
+export const MIN_CELL_SIZE_PX = 60
+export const MAX_CELL_SIZE_PX = 200
 
 function useCellSizePx(columns: number, rows: number): number {
   const [cellSize, setCellSize] = useState(120)
@@ -22,7 +25,7 @@ function useCellSizePx(columns: number, rows: number): number {
       const availableWidth = window.innerWidth - GRID_PADDING_PX * 2 - GRID_GAP_PX * (columns - 1)
       const availableHeight = window.innerHeight - GRID_PADDING_PX * 2 - GRID_GAP_PX * (rows - 1)
       const size = Math.min(availableWidth / columns, availableHeight / rows)
-      setCellSize(Math.max(size, 24))
+      setCellSize(Math.min(Math.max(size, MIN_CELL_SIZE_PX), MAX_CELL_SIZE_PX))
     }
     recalculate()
     window.addEventListener('resize', recalculate)
@@ -33,11 +36,23 @@ function useCellSizePx(columns: number, rows: number): number {
 }
 
 export function WidgetGrid() {
-  const { settings, update } = useSettings()
+  const { settings, update, isAdjustingGrid } = useSettings()
   const [draggingId, setDraggingId] = useState<WidgetId | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const { columns, rows } = settings.grid
   const cellSize = useCellSizePx(columns, rows)
+
+  // Whenever the grid's bounds shrink (density sliders, or a window resize
+  // that lowers the viewport-derived cell count), pull back in any widget
+  // that now runs off the edge instead of leaving it stuck out of view.
+  useEffect(() => {
+    update((current) => {
+      const reconciled = reconcileLayout(current.widgetLayout, columns, rows)
+      if (reconciled === current.widgetLayout) return current
+      return { ...current, widgetLayout: reconciled }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columns, rows])
 
   function handleDragStart(id: WidgetId) {
     setDraggingId(id)
@@ -92,7 +107,7 @@ export function WidgetGrid() {
   return (
     <div
       ref={gridRef}
-      className={`widget-grid${draggingId ? ' dragging-active' : ''}`}
+      className={`widget-grid${draggingId || isAdjustingGrid ? ' dragging-active' : ''}`}
       style={{
         gridTemplateColumns: `repeat(${columns}, ${cellSize}px)`,
         gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
@@ -118,7 +133,7 @@ export function WidgetGrid() {
           onDragStart={() => handleDragStart(entry.widgetId)}
           onDragEnd={handleDragEnd}
         >
-          <Squircle>{renderWidget(entry.widgetId)}</Squircle>
+          <Squircle shape={shapeForWidget(entry.widgetId)}>{renderWidget(entry.widgetId)}</Squircle>
         </div>
       ))}
       <div

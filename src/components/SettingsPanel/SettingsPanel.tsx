@@ -17,7 +17,7 @@ const MIN_ROWS = 3
 const MAX_ROWS = 16
 
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { settings, update, saveError } = useSettings()
+  const { settings, update, saveError, setIsAdjustingGrid, pingGridAdjustment } = useSettings()
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   if (!open) return null
@@ -43,10 +43,12 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
 
   function setColumns(value: number) {
     update((current) => ({ ...current, grid: { ...current.grid, columns: value } }))
+    pingGridAdjustment()
   }
 
   function setRows(value: number) {
     update((current) => ({ ...current, grid: { ...current.grid, rows: value } }))
+    pingGridAdjustment()
   }
 
   function handleUpload(e: ChangeEvent<HTMLInputElement>) {
@@ -146,6 +148,8 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
             max={MAX_COLUMNS}
             value={settings.grid.columns}
             onChange={(e) => setColumns(Number(e.target.value))}
+            onMouseDown={() => setIsAdjustingGrid(true)}
+            onTouchStart={() => setIsAdjustingGrid(true)}
           />
         </label>
         <label>
@@ -157,6 +161,8 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
             max={MAX_ROWS}
             value={settings.grid.rows}
             onChange={(e) => setRows(Number(e.target.value))}
+            onMouseDown={() => setIsAdjustingGrid(true)}
+            onTouchStart={() => setIsAdjustingGrid(true)}
           />
         </label>
       </div>

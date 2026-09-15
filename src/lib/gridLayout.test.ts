@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { moveWidget, findWidgetAt, findFirstFreeCell } from './gridLayout'
+import { moveWidget, findWidgetAt, findFirstFreeCell, findFirstFreeSlot, reconcileLayout } from './gridLayout'
 import type { WidgetLayoutEntry } from './types'
 
 const layout: WidgetLayoutEntry[] = [
@@ -94,5 +94,72 @@ describe('findFirstFreeCell', () => {
 
   it('returns the first cell when the layout is empty', () => {
     expect(findFirstFreeCell([], 4)).toEqual({ col: 0, row: 0 })
+  })
+})
+
+describe('findFirstFreeSlot', () => {
+  it('finds a slot for a multi-cell widget that fits within bounds', () => {
+    expect(findFirstFreeSlot(layout, 2, 2, COLUMNS, ROWS)).toEqual({ col: 0, row: 3 })
+  })
+
+  it('returns null when no slot of the requested size fits within bounds', () => {
+    expect(findFirstFreeSlot(layout, 5, 1, COLUMNS, ROWS)).toBeNull()
+  })
+
+  it('returns the origin when the layout is empty', () => {
+    expect(findFirstFreeSlot([], 2, 2, COLUMNS, ROWS)).toEqual({ col: 0, row: 0 })
+  })
+})
+
+describe('reconcileLayout', () => {
+  it('leaves widgets untouched when they still fit within the new bounds', () => {
+    const result = reconcileLayout(layout, COLUMNS, ROWS)
+    expect(result).toBe(layout)
+  })
+
+  it('relocates a widget that now runs off the right edge to the first free slot', () => {
+    const shrunkColumns = 3 // shortcuts (col 2, colSpan 2) would run to col 4, past bound 3
+    const result = reconcileLayout(layout, shrunkColumns, ROWS)
+    const shortcuts = result.find((w) => w.widgetId === 'shortcuts')!
+    expect(shortcuts.col + shortcuts.colSpan).toBeLessThanOrEqual(shrunkColumns)
+    expect(shortcuts.colSpan).toBe(2)
+    expect(shortcuts.rowSpan).toBe(2)
+  })
+
+  it('relocates a widget that now runs off the bottom edge, when a free slot exists', () => {
+    // A taller grid than the previous test so weather/shortcuts (rowSpan 2)
+    // have somewhere to go once they no longer fit at row 1.
+    const shrunkRows = 3
+    const result = reconcileLayout(layout, COLUMNS, shrunkRows)
+    for (const entry of result) {
+      expect(entry.row + entry.rowSpan).toBeLessThanOrEqual(shrunkRows)
+    }
+  })
+
+  it('leaves a 2x2 widget in its out-of-bounds position when no slot fits it', () => {
+    // Only 2 rows: a 2x2 widget can never fit anywhere in this grid, so it's
+    // left where it was rather than discarded.
+    const shrunkRows = 2
+    const result = reconcileLayout(layout, COLUMNS, shrunkRows)
+    const weather = result.find((w) => w.widgetId === 'weather')!
+    expect(weather).toEqual(layout[1])
+  })
+
+  it('does not relocate widgets that still fit even if others move', () => {
+    const shrunkColumns = 3
+    const result = reconcileLayout(layout, shrunkColumns, ROWS)
+    const search = result.find((w) => w.widgetId === 'search')
+    // search (colSpan 4) no longer fits in 3 columns either, so it also
+    // gets relocated — but weather (colSpan 2, col 0) still fits and should
+    // be untouched.
+    const weather = result.find((w) => w.widgetId === 'weather')!
+    expect(weather).toEqual(layout[1])
+    expect(search).toBeDefined()
+  })
+
+  it('leaves a widget in place if no free slot fits it anywhere', () => {
+    const tiny: WidgetLayoutEntry[] = [{ widgetId: 'search', col: 0, row: 0, colSpan: 4, rowSpan: 1 }]
+    const result = reconcileLayout(tiny, 2, 8) // 4-wide widget can never fit in a 2-column grid
+    expect(result).toEqual(tiny)
   })
 })

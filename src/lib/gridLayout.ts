@@ -65,3 +65,77 @@ export function findFirstFreeCell(
     }
   }
 }
+
+function rectangleFree(
+  layout: WidgetLayoutEntry[],
+  col: number,
+  row: number,
+  colSpan: number,
+  rowSpan: number
+): boolean {
+  for (let r = row; r < row + rowSpan; r++) {
+    for (let c = col; c < col + colSpan; c++) {
+      if (cellIsOccupied(layout, c, r)) return false
+    }
+  }
+  return true
+}
+
+/**
+ * Scans left-to-right, top-to-bottom for the first colSpan x rowSpan
+ * rectangle that fits entirely within the grid's bounds (columns x rows)
+ * without overlapping any existing widget. Returns null if no such
+ * rectangle exists — the caller decides what to do (e.g. leave the widget
+ * where it is rather than losing it).
+ */
+export function findFirstFreeSlot(
+  layout: WidgetLayoutEntry[],
+  colSpan: number,
+  rowSpan: number,
+  columns: number,
+  rows: number
+): { col: number; row: number } | null {
+  for (let row = 0; row + rowSpan <= rows; row++) {
+    for (let col = 0; col + colSpan <= columns; col++) {
+      if (rectangleFree(layout, col, row, colSpan, rowSpan)) {
+        return { col, row }
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * Called whenever the grid's bounds shrink (density sliders, or a window
+ * resize that lowers the viewport-derived column/row count). Any widget
+ * whose rectangle now runs off the grid is relocated to the first free slot
+ * that fits it; a widget that still fits in place is left untouched so
+ * unrelated widgets don't shuffle around every time the grid is resized.
+ * A widget with nowhere left to fit is left at its out-of-bounds position
+ * rather than deleted — better recoverable than lost.
+ */
+export function reconcileLayout(
+  layout: WidgetLayoutEntry[],
+  columns: number,
+  rows: number
+): WidgetLayoutEntry[] {
+  let changed = false
+  const result: WidgetLayoutEntry[] = []
+
+  for (const entry of layout) {
+    const fitsInPlace = entry.col + entry.colSpan <= columns && entry.row + entry.rowSpan <= rows
+    if (fitsInPlace) {
+      result.push(entry)
+      continue
+    }
+    const slot = findFirstFreeSlot(result, entry.colSpan, entry.rowSpan, columns, rows)
+    if (!slot) {
+      result.push(entry)
+      continue
+    }
+    changed = true
+    result.push({ ...entry, col: slot.col, row: slot.row })
+  }
+
+  return changed ? result : layout
+}
