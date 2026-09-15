@@ -12,10 +12,10 @@ export function swapWidgets(
 
   return layout.map((entry) => {
     if (entry.widgetId === draggedId) {
-      return { ...entry, col: target.col, row: target.row }
+      return { ...entry, col: target.col, row: target.row, colSpan: target.colSpan, rowSpan: target.rowSpan }
     }
     if (entry.widgetId === targetId) {
-      return { ...entry, col: dragged.col, row: dragged.row }
+      return { ...entry, col: dragged.col, row: dragged.row, colSpan: dragged.colSpan, rowSpan: dragged.rowSpan }
     }
     return entry
   })

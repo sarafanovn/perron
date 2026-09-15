@@ -9,7 +9,7 @@ const layout: WidgetLayoutEntry[] = [
 ]
 
 describe('swapWidgets', () => {
-  it('swaps col/row between two widgets, keeping their own spans', () => {
+  it('swaps the full position (col/row/colSpan/rowSpan) between two same-sized widgets', () => {
     const result = swapWidgets(layout, 'weather', 'shortcuts')
     const weather = result.find((w) => w.widgetId === 'weather')!
     const shortcuts = result.find((w) => w.widgetId === 'shortcuts')!
@@ -18,6 +18,22 @@ describe('swapWidgets', () => {
     expect(weather.colSpan).toBe(2)
     expect(shortcuts.col).toBe(0)
     expect(shortcuts.row).toBe(1)
+  })
+
+  it('swaps the full position between differently-sized widgets without leaving overlapping spans', () => {
+    const result = swapWidgets(layout, 'search', 'weather')
+    const search = result.find((w) => w.widgetId === 'search')!
+    const weather = result.find((w) => w.widgetId === 'weather')!
+    // search takes weather's old slot entirely, including weather's span
+    expect(search.col).toBe(0)
+    expect(search.row).toBe(1)
+    expect(search.colSpan).toBe(2)
+    expect(search.rowSpan).toBe(2)
+    // weather takes search's old slot entirely, including search's span
+    expect(weather.col).toBe(0)
+    expect(weather.row).toBe(0)
+    expect(weather.colSpan).toBe(4)
+    expect(weather.rowSpan).toBe(1)
   })
 
   it('returns the same layout when dragging onto itself', () => {
