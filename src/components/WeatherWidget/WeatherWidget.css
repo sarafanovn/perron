@@ -1,0 +1,38 @@
+.weather-widget {
+  height: 100%;
+  padding: 16px;
+  background: var(--color-bg-surface);
+  backdrop-filter: blur(var(--blur-surface));
+  border-radius: var(--radius-widget);
+  box-shadow: var(--shadow-widget);
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.weather-widget .temp {
+  font-size: 40px;
+  font-weight: 600;
+}
+
+.weather-widget form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.weather-widget input {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.6);
+  font: inherit;
+}
+
+.weather-widget .city-option {
+  cursor: pointer;
+  padding: 4px 0;
+  color: var(--color-text-secondary);
+}
