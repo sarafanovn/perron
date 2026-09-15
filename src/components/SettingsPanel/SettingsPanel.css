@@ -1,0 +1,42 @@
+.settings-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100vh;
+  background: var(--color-bg-surface-solid);
+  box-shadow: var(--shadow-widget);
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-panel h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.settings-panel .preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.settings-panel .preset-swatch {
+  height: 48px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.settings-panel .close-btn {
+  align-self: flex-end;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+}
