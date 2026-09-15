@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { swapWidgets, findWidgetAt } from './gridLayout'
+import { swapWidgets, findWidgetAt, findFirstFreeCell } from './gridLayout'
 import type { WidgetLayoutEntry } from './types'
 
 const layout: WidgetLayoutEntry[] = [
@@ -42,7 +42,6 @@ describe('swapWidgets', () => {
   })
 
   it('leaves layout unchanged if either widget id is not found', () => {
-    // @ts-expect-error testing invalid id defensively
     const result = swapWidgets(layout, 'weather', 'nonexistent')
     expect(result).toEqual(layout)
   })
@@ -56,5 +55,32 @@ describe('findWidgetAt', () => {
 
   it('returns undefined for an empty cell', () => {
     expect(findWidgetAt(layout, 3, 3)).toBeUndefined()
+  })
+})
+
+describe('findFirstFreeCell', () => {
+  it('finds the first free cell below the existing widgets', () => {
+    // row 0: search spans all 4 columns; rows 1-2: weather + shortcuts
+    // (each rowSpan 2) span all 4 columns between them; row 3 is free.
+    expect(findFirstFreeCell(layout, 4)).toEqual({ col: 0, row: 3 })
+  })
+
+  it('finds a free cell in a partially-filled row', () => {
+    const partial: WidgetLayoutEntry[] = [
+      { widgetId: 'search', col: 0, row: 0, colSpan: 2, rowSpan: 1 },
+    ]
+    expect(findFirstFreeCell(partial, 4)).toEqual({ col: 2, row: 0 })
+  })
+
+  it('skips cells covered by a multi-cell widget, not just its origin', () => {
+    const wide: WidgetLayoutEntry[] = [
+      { widgetId: 'weather', col: 0, row: 0, colSpan: 2, rowSpan: 2 },
+    ]
+    // (1, 1) is inside weather's rectangle even though weather's origin is (0, 0)
+    expect(findFirstFreeCell(wide, 4)).toEqual({ col: 2, row: 0 })
+  })
+
+  it('returns the first cell when the layout is empty', () => {
+    expect(findFirstFreeCell([], 4)).toEqual({ col: 0, row: 0 })
   })
 })

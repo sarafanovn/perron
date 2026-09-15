@@ -1,17 +1,16 @@
-import { useState, type DragEvent, type JSX } from 'react'
+import { useState, type DragEvent } from 'react'
 import { useSettings } from '../../context/SettingsContext'
-import { swapWidgets } from '../../lib/gridLayout'
+import { swapWidgets, findFirstFreeCell } from '../../lib/gridLayout'
+import { addShortcut, removeShortcut } from '../../lib/shortcutActions'
+import { isShortcutWidgetId, shortcutIdFromWidgetId } from '../../lib/shortcutWidgets'
 import type { WidgetId } from '../../lib/types'
 import { SearchWidget } from '../SearchWidget/SearchWidget'
 import { WeatherWidget } from '../WeatherWidget/WeatherWidget'
-import { ShortcutsWidget } from '../ShortcutsWidget/ShortcutsWidget'
+import { ShortcutTile } from '../ShortcutTile/ShortcutTile'
+import { AddShortcutTile } from '../AddShortcutTile/AddShortcutTile'
 import './WidgetGrid.css'
 
-const WIDGET_COMPONENTS: Record<WidgetId, () => JSX.Element> = {
-  search: SearchWidget,
-  weather: WeatherWidget,
-  shortcuts: ShortcutsWidget,
-}
+const GRID_COLUMNS = 4
 
 export function WidgetGrid() {
   const { settings, update } = useSettings()
@@ -39,31 +38,62 @@ export function WidgetGrid() {
     setDraggingId(null)
   }
 
+  function handleAddShortcut(shortcut: { label: string; url: string }) {
+    update((current) => addShortcut(current, shortcut))
+  }
+
+  function handleRemoveShortcut(shortcutId: string) {
+    update((current) => removeShortcut(current, shortcutId))
+  }
+
+  function renderWidget(widgetId: WidgetId) {
+    if (widgetId === 'search') return <SearchWidget />
+    if (widgetId === 'weather') return <WeatherWidget />
+    if (isShortcutWidgetId(widgetId)) {
+      const shortcutId = shortcutIdFromWidgetId(widgetId)
+      const shortcut = settings.shortcuts.find((s) => s.id === shortcutId)
+      if (!shortcut) return null
+      return <ShortcutTile shortcut={shortcut} onRemove={handleRemoveShortcut} />
+    }
+    return null
+  }
+
+  const addTilePosition = findFirstFreeCell(settings.widgetLayout, GRID_COLUMNS)
+
   return (
     <div className={`widget-grid${draggingId ? ' dragging-active' : ''}`}>
-      {settings.widgetLayout.map((entry) => {
-        const Widget = WIDGET_COMPONENTS[entry.widgetId]
-        return (
-          <div
-            key={entry.widgetId}
-            data-testid={`widget-${entry.widgetId}`}
-            className={`widget-cell${draggingId === entry.widgetId ? ' dragging' : ''}`}
-            draggable
-            style={{
-              gridColumnStart: entry.col + 1,
-              gridColumnEnd: `span ${entry.colSpan}`,
-              gridRowStart: entry.row + 1,
-              gridRowEnd: `span ${entry.rowSpan}`,
-            }}
-            onDragStart={() => handleDragStart(entry.widgetId)}
-            onDragOver={handleDragOver}
-            onDrop={() => handleDrop(entry.widgetId)}
-            onDragEnd={handleDragEnd}
-          >
-            <Widget />
-          </div>
-        )
-      })}
+      {settings.widgetLayout.map((entry) => (
+        <div
+          key={entry.widgetId}
+          data-testid={`widget-${entry.widgetId}`}
+          className={`widget-cell${draggingId === entry.widgetId ? ' dragging' : ''}`}
+          draggable
+          style={{
+            gridColumnStart: entry.col + 1,
+            gridColumnEnd: `span ${entry.colSpan}`,
+            gridRowStart: entry.row + 1,
+            gridRowEnd: `span ${entry.rowSpan}`,
+          }}
+          onDragStart={() => handleDragStart(entry.widgetId)}
+          onDragOver={handleDragOver}
+          onDrop={() => handleDrop(entry.widgetId)}
+          onDragEnd={handleDragEnd}
+        >
+          {renderWidget(entry.widgetId)}
+        </div>
+      ))}
+      <div
+        data-testid="widget-add-shortcut"
+        className="widget-cell"
+        style={{
+          gridColumnStart: addTilePosition.col + 1,
+          gridColumnEnd: 'span 1',
+          gridRowStart: addTilePosition.row + 1,
+          gridRowEnd: 'span 1',
+        }}
+      >
+        <AddShortcutTile onAdd={handleAddShortcut} />
+      </div>
     </div>
   )
 }

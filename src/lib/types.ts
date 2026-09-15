@@ -1,5 +1,8 @@
 export type SearchEngineId = 'google' | 'duckduckgo' | 'bing' | 'yandex'
-export type WidgetId = 'search' | 'weather' | 'shortcuts'
+// Built-in widgets keep fixed ids; each shortcut is its own widget with
+// id `shortcut:<Shortcut.id>` so it can be positioned and dragged
+// independently in the grid.
+export type WidgetId = 'search' | 'weather' | (string & {})
 export type BackgroundType = 'gradient' | 'solid' | 'image'
 
 export interface BackgroundSettings {
