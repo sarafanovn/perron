@@ -1,7 +1,7 @@
 .widget-grid {
   position: relative;
   display: grid;
-  padding: 40px;
+  padding: var(--grid-padding, 40px);
 }
 
 .widget-grid.dragging-active::before {
@@ -23,6 +23,11 @@
       transparent 1px,
       transparent calc(var(--cell-size, 120px) + var(--grid-gap, 20px))
     );
+  /* The pattern's own origin is 0,0 (the container's border edge), but the
+     first grid cell actually starts one padding-box inset from there — so
+     the lines have to be shifted by the padding, or they fall mid-gap
+     instead of on the cell boundaries. */
+  background-position: var(--grid-padding, 40px) var(--grid-padding, 40px);
   pointer-events: none;
   z-index: 0;
 }

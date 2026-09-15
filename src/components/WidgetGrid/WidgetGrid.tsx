@@ -114,6 +114,7 @@ export function WidgetGrid() {
         gap: `${GRID_GAP_PX}px`,
         ['--cell-size' as string]: `${cellSize}px`,
         ['--grid-gap' as string]: `${GRID_GAP_PX}px`,
+        ['--grid-padding' as string]: `${GRID_PADDING_PX}px`,
       }}
       onDragOver={handleDragOver}
       onDrop={handleGridDrop}
