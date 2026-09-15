@@ -1,3 +1,9 @@
+import { SettingsProvider } from './context/SettingsContext'
+
 export default function App() {
-  return <div className="app-root">Perron</div>
+  return (
+    <SettingsProvider>
+      <div className="app-root">Perron</div>
+    </SettingsProvider>
+  )
 }
