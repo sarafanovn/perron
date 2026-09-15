@@ -6,11 +6,14 @@ entirely client-side; settings are stored in your browser's `localStorage`.
 
 ## Run locally
 
+Requires only Docker — no local Node.js needed:
+
 ```bash
-docker compose up --build -d
+make up
 ```
 
-Open http://localhost:8080
+Open http://localhost:8080. See `make help` for other Docker targets
+(`down`, `restart`, `rebuild`, `logs`, `ps`).
 
 ## Use as your Firefox/Chromium start page
 
@@ -26,10 +29,12 @@ specific page option also accepts this URL for startup/homepage behavior.
 
 ## Development
 
+Requires Node.js locally:
+
 ```bash
-npm install
-npm run dev
-npm run test
+make install
+make dev
+make test
 ```
 
 ## Notes
