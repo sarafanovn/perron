@@ -1,0 +1,15 @@
+.widget-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 220px);
+  grid-auto-rows: 100px;
+  gap: 20px;
+  padding: 40px;
+}
+
+.widget-grid .widget-cell {
+  transition: transform var(--transition-spring);
+}
+
+.widget-grid .widget-cell.dragging {
+  opacity: 0.5;
+}
