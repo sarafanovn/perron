@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   moveWidget,
+  placeWidgetAt,
   findWidgetAt,
   findFirstFreeCell,
   findFirstFreeSlot,
@@ -47,6 +48,29 @@ describe('moveWidget', () => {
 
   it('rejects a move that would run past the bottom edge of the grid', () => {
     const result = moveWidget(layout, 'weather', 0, 7, COLUMNS, ROWS)
+    expect(result).toEqual(layout)
+  })
+})
+
+describe('placeWidgetAt', () => {
+  it('inserts a new widget at the given rectangle', () => {
+    const result = placeWidgetAt(layout, 'new-widget', 0, 3, 2, 2, COLUMNS, ROWS)
+    const entry = result.find((w) => w.widgetId === 'new-widget')
+    expect(entry).toMatchObject({ col: 0, row: 3, colSpan: 2, rowSpan: 2 })
+  })
+
+  it('leaves existing widgets untouched', () => {
+    const result = placeWidgetAt(layout, 'new-widget', 0, 3, 2, 2, COLUMNS, ROWS)
+    expect(result.slice(0, layout.length)).toEqual(layout)
+  })
+
+  it('rejects a rectangle that overlaps an existing widget', () => {
+    const result = placeWidgetAt(layout, 'new-widget', 0, 0, 2, 2, COLUMNS, ROWS)
+    expect(result).toEqual(layout)
+  })
+
+  it('rejects a rectangle that runs off the grid', () => {
+    const result = placeWidgetAt(layout, 'new-widget', 3, 3, 2, 2, COLUMNS, ROWS)
     expect(result).toEqual(layout)
   })
 

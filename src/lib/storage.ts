@@ -12,9 +12,15 @@ export const DEFAULT_SETTINGS: Settings = {
     accentColor: '#0a84ff',
     background: { type: 'gradient', value: 'sunset' },
     font: 'system',
+    mode: 'auto',
+    style: 'glass',
   },
   search: { engine: 'google' },
+  weather: { dynamicBackground: true },
   shortcuts: [],
+  notes: [],
+  translators: [],
+  clocks: [],
   widgetLayout: [
     { widgetId: 'search', col: 0, row: 0, colSpan: 4, rowSpan: 1 },
     { widgetId: 'weather', col: 0, row: 1, colSpan: 2, rowSpan: 2 },
@@ -61,13 +67,85 @@ function migrateGridSettings(settings: Omit<Settings, 'grid'> & { grid?: unknown
   return { ...settings, grid: DEFAULT_GRID } as Settings
 }
 
+// Settings saved before notes/translators/clocks existed lack those arrays
+// entirely; backfill them so older localStorage data keeps working.
+function migrateWidgetCollections(settings: Settings): Settings {
+  const needsNotes = !Array.isArray(settings.notes)
+  const needsTranslators = !Array.isArray(settings.translators)
+  const needsClocks = !Array.isArray(settings.clocks)
+  if (!needsNotes && !needsTranslators && !needsClocks) return settings
+  return {
+    ...settings,
+    notes: needsNotes ? [] : settings.notes,
+    translators: needsTranslators ? [] : settings.translators,
+    clocks: needsClocks ? [] : settings.clocks,
+  }
+}
+
+// Settings saved before the Light/Dark/Auto theme mode existed lack
+// theme.mode; default to 'auto' so older localStorage data keeps working
+// without silently locking existing users into a fixed light appearance.
+function migrateThemeMode(settings: Settings): Settings {
+  const validModes = ['light', 'dark', 'auto']
+  if (validModes.includes(settings.theme.mode)) return settings
+  return { ...settings, theme: { ...settings.theme, mode: 'auto' } }
+}
+
+// Settings saved before the Plain/Glass style setting existed lack
+// theme.style; default to 'glass' so older localStorage data keeps the
+// frosted look it already had rather than silently flattening it.
+function migrateThemeStyle(settings: Settings): Settings {
+  const validStyles = ['plain', 'glass']
+  if (validStyles.includes(settings.theme.style)) return settings
+  return { ...settings, theme: { ...settings.theme, style: 'glass' } }
+}
+
+// Settings saved before the weather widget's dynamic-background toggle
+// existed lack `weather`; default to true so older localStorage data keeps
+// the gradient look it already had rather than silently flattening it.
+function migrateWeatherSettings(settings: Settings): Settings {
+  if (settings.weather && typeof settings.weather.dynamicBackground === 'boolean') return settings
+  return { ...settings, weather: { dynamicBackground: true } }
+}
+
+// Clocks saved before timeFormat/showDate/showBackground existed lack
+// those fields; default to the same values addClockAt gives a new clock so
+// an existing clock's look doesn't change out from under the user.
+function migrateClockSettings(settings: Settings): Settings {
+  let changed = false
+  const clocks = settings.clocks.map((c) => {
+    if (
+      typeof c.timeFormat === 'string' &&
+      typeof c.showDate === 'boolean' &&
+      typeof c.showBackground === 'boolean'
+    ) {
+      return c
+    }
+    changed = true
+    return {
+      ...c,
+      timeFormat: c.timeFormat ?? '24h',
+      showDate: c.showDate ?? true,
+      showBackground: c.showBackground ?? true,
+    }
+  })
+  if (!changed) return settings
+  return { ...settings, clocks }
+}
+
 export function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return DEFAULT_SETTINGS
     const parsed = JSON.parse(raw)
     if (!isValidSettings(parsed)) return DEFAULT_SETTINGS
-    return migrateShortcutWidgets(migrateGridSettings(parsed))
+    return migrateShortcutWidgets(
+      migrateClockSettings(
+        migrateWeatherSettings(
+          migrateThemeStyle(migrateThemeMode(migrateWidgetCollections(migrateGridSettings(parsed))))
+        )
+      )
+    )
   } catch {
     return DEFAULT_SETTINGS
   }

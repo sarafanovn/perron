@@ -1,0 +1,57 @@
+.translator-widget {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.translator-langs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.translator-langs select {
+  flex: 1;
+  min-width: 0;
+  border-radius: 8px;
+  padding: 6px 16px 6px 6px;
+  background-position: right 4px center;
+  background-size: 10px;
+  font-size: 11px;
+  color: var(--color-text-primary);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.translator-widget .swap-btn {
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.translator-widget textarea {
+  flex: 1;
+  min-height: 0;
+  padding: 8px;
+  font-size: 13px;
+  resize: none;
+  outline: none;
+}
+
+.translator-result {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+  font-size: 13px;
+  color: var(--color-text-primary);
+}
+

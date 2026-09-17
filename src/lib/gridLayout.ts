@@ -34,6 +34,30 @@ export function moveWidget(
   )
 }
 
+/**
+ * Inserts a brand-new widget (not yet in the layout) at a specific
+ * colSpan x rowSpan rectangle, e.g. from a drag-and-drop of a picker card
+ * onto a grid cell. Rejects (returns the layout unchanged) if the rectangle
+ * runs off the grid's bounds or overlaps any existing widget — same
+ * placement rule as moveWidget, but for insertion rather than relocation.
+ */
+export function placeWidgetAt(
+  layout: WidgetLayoutEntry[],
+  widgetId: WidgetId,
+  col: number,
+  row: number,
+  colSpan: number,
+  rowSpan: number,
+  columns: number,
+  rows: number
+): WidgetLayoutEntry[] {
+  if (col < 0 || row < 0) return layout
+  if (col + colSpan > columns || row + rowSpan > rows) return layout
+  if (!rectangleFree(layout, col, row, colSpan, rowSpan)) return layout
+
+  return [...layout, { widgetId, col, row, colSpan, rowSpan }]
+}
+
 export function findWidgetAt(
   layout: WidgetLayoutEntry[],
   col: number,

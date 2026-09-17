@@ -4,6 +4,22 @@
   --color-bg-surface-solid: #f5f5f7;
   --color-text-primary: #1d1d1f;
   --color-text-secondary: rgba(60, 60, 67, 0.6);
+  /* Frosted input fields sitting on top of a widget's own --color-bg-surface
+     (e.g. the label/URL fields in AddShortcutTile, the language pickers in
+     TranslatorWidget) need to read as a step lighter than that surface in
+     both themes — a dedicated token instead of each widget hardcoding its
+     own rgba() keeps that relationship consistent and themeable. */
+  --color-input-bg: rgba(255, 255, 255, 0.6);
+  /* The small circular "remove" badge on a widget in edit mode (ShortcutTile,
+     NoteWidget, ClockWidget, WidgetGrid's singleton remove button, ...) —
+     one shared token instead of each widget repeating the same rgba() pair. */
+  --color-badge-bg: rgba(60, 60, 67, 0.7);
+  --color-badge-text: #fff;
+  /* Subtle hover state for a control sitting on --color-bg-surface (e.g.
+     EditFab's pill options) — darkens in light theme, lightens in dark
+     theme, so hovering always reads as "brighter than resting", not
+     inverted into a near-invisible darken-on-dark. */
+  --color-hover-overlay: rgba(0, 0, 0, 0.06);
   --font-family-base: -apple-system, BlinkMacSystemFont, 'SF Pro Display',
     'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --radius-widget: 20px;
@@ -11,6 +27,70 @@
   --blur-surface: 24px;
   --transition-spring: 320ms cubic-bezier(0.32, 0.72, 0, 1);
   --page-background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+
+  /* --color-surface is what every widget/panel/FAB actually paints its
+     background with; --surface-filter/--surface-highlight/-inset-shadow are
+     the glass-only backdrop-filter and inset light/shadow lines. [data-style]
+     below picks which set of values these resolve to — 'glass' (default)
+     keeps the existing translucent + blurred look, 'plain' makes them an
+     opaque flat fill with the blur/highlight switched off. Components read
+     only these four properties, never --color-bg-surface/-solid directly,
+     so the plain/glass switch doesn't require per-component branching. */
+  --color-surface: var(--color-bg-surface);
+  --surface-filter: blur(var(--blur-surface));
+  --surface-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  --surface-inset-shadow: inset 0 -1px 12px rgba(0, 0, 0, 0.04);
+}
+
+@supports (backdrop-filter: url(#glass-distortion)) or (-webkit-backdrop-filter: url(#glass-distortion)) {
+  :root:not([data-style="plain"]) {
+    /* Bends the frosted backdrop through the SVG displacement filter defined
+       in App.tsx for a refractive "Liquid Glass" look, layered before the
+       blur (filters apply right-to-left) so the backdrop is distorted first,
+       then blurred smooth. Gated behind @supports because Safari and Firefox
+       don't accept an SVG filter reference inside backdrop-filter — they'd
+       otherwise drop the whole property and render no blur at all. */
+    --surface-filter: blur(var(--blur-surface)) url(#glass-distortion);
+  }
+}
+
+:root[data-style="plain"] {
+  --color-surface: var(--color-bg-surface-solid);
+  --surface-filter: none;
+  --surface-highlight: none;
+  --surface-inset-shadow: none;
+}
+
+/* Dark theme, in two layers: the "auto" case follows the OS/browser's
+   prefers-color-scheme, and [data-theme="dark"] lets the explicit Light/
+   Dark/Auto picker in AppearancePanel override it either way regardless of
+   system setting. :root:not([data-theme="light"]) means an explicit "dark"
+   choice wins even on a light-preferring system, while leaving the media
+   query itself as the "auto" baseline. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg-surface: rgba(44, 44, 46, 0.55);
+    --color-bg-surface-solid: #1c1c1e;
+    --color-text-primary: #f5f5f7;
+    --color-text-secondary: rgba(235, 235, 245, 0.6);
+    --color-input-bg: rgba(255, 255, 255, 0.12);
+    --color-badge-bg: rgba(235, 235, 245, 0.7);
+    --color-badge-text: #1c1c1e;
+    --color-hover-overlay: rgba(255, 255, 255, 0.1);
+    --shadow-widget: 0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-bg-surface: rgba(44, 44, 46, 0.55);
+  --color-bg-surface-solid: #1c1c1e;
+  --color-text-primary: #f5f5f7;
+  --color-text-secondary: rgba(235, 235, 245, 0.6);
+  --color-input-bg: rgba(255, 255, 255, 0.12);
+  --color-badge-bg: rgba(235, 235, 245, 0.7);
+  --color-badge-text: #1c1c1e;
+  --color-hover-overlay: rgba(255, 255, 255, 0.1);
+  --shadow-widget: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -22,4 +102,98 @@ body {
   font-family: var(--font-family-base);
   color: var(--color-text-primary);
   overflow: hidden;
+}
+
+/* Every <select> in the app shares one Apple-style look — frosted
+   background, no system border, small custom chevron — instead of each
+   widget re-implementing (or forgetting to override) the browser's native
+   control, which otherwise reads as a jarring rectangular outlier against
+   the rounded, translucent surfaces everywhere else. Component stylesheets
+   only need to adjust size/padding/background for their own context; the
+   reset and chevron live here once. The chevron is a plain currentColor SVG
+   so it always matches --color-text-secondary in whichever theme is active,
+   without needing a separate light/dark asset. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  border-radius: 10px;
+  background-color: var(--color-input-bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 14px;
+  padding: 6px 26px 6px 10px;
+  color: var(--color-text-secondary);
+  color-scheme: light;
+  font: inherit;
+  cursor: pointer;
+}
+
+:root:not([data-theme="light"]) select {
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23ebebf5' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  }
+}
+
+:root[data-theme="dark"] select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23ebebf5' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+}
+
+/* Shared small circular badge shape for the two edit-mode controls every
+   widget can show — the top-right remove (✕) and, one slot below it, the
+   per-widget style-editor button. One definition instead of each widget's
+   CSS repeating the same absolute-position/size/radius block (previously
+   duplicated verbatim across ShortcutTile, NoteWidget, TranslatorWidget,
+   ClockWidget and WidgetGrid's search/weather case). Components only need
+   to add class="widget-badge widget-badge-remove" (or -style) to their
+   markup; positioning and appearance live here once. */
+.widget-badge {
+  position: absolute;
+  right: 4px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-badge-bg);
+  color: var(--color-badge-text);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+.widget-badge-remove {
+  top: 4px;
+}
+
+.widget-badge-style {
+  top: 26px;
+  font-size: 9px;
+}
+
+/* Shared reset for plain text inputs/textareas sitting on a widget or panel
+   surface — border:none, --color-input-bg fill, inherited font — the same
+   handful of declarations that AddShortcutTile, NoteWidget, TranslatorWidget,
+   WeatherWidget's city-search form and WidgetStylePanel each repeated
+   individually. Excludes range/color/checkbox/file inputs, which have their
+   own distinct native appearance and are styled per-context instead. */
+input[type='text'],
+input[type='url'],
+input:not([type]),
+textarea {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--color-input-bg);
+  color: var(--color-text-primary);
+  font: inherit;
 }

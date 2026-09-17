@@ -1,0 +1,70 @@
+.edit-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.edit-fab-main {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-surface);
+  backdrop-filter: var(--surface-filter);
+  -webkit-backdrop-filter: var(--surface-filter);
+  box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.edit-fab-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 44px;
+  border-radius: 22px;
+  background: var(--color-surface);
+  backdrop-filter: var(--surface-filter);
+  -webkit-backdrop-filter: var(--surface-filter);
+  box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin-bottom: 0;
+  transform: translateY(8px);
+  transition:
+    max-height var(--transition-spring),
+    opacity var(--transition-spring),
+    margin-bottom var(--transition-spring),
+    transform var(--transition-spring),
+    padding var(--transition-spring);
+}
+
+.edit-fab:hover .edit-fab-pill,
+.edit-fab:focus-within .edit-fab-pill {
+  max-height: 200px;
+  opacity: 1;
+  margin-bottom: 8px;
+  padding: 8px 0;
+  transform: translateY(0);
+}
+
+.edit-fab-option {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.edit-fab-option:hover {
+  background: var(--color-hover-overlay);
+}

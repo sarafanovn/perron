@@ -55,4 +55,17 @@ describe('Squircle', () => {
     expect(wrapper.style.overflow).toBe('hidden')
     expect(wrapper.style.clipPath).toBe('')
   })
+
+  it('applies the widget-radius border-radius instead of clip-path for the rounded shape', () => {
+    vi.stubGlobal('ResizeObserver', MockResizeObserver)
+    const { container } = render(
+      <Squircle shape="rounded">
+        <span>content</span>
+      </Squircle>
+    )
+    const wrapper = container.querySelector('.squircle-wrapper') as HTMLElement
+    expect(wrapper.style.borderRadius).toBe('var(--radius-widget)')
+    expect(wrapper.style.overflow).toBe('hidden')
+    expect(wrapper.style.clipPath).toBe('')
+  })
 })

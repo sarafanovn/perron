@@ -23,11 +23,14 @@
       transparent 1px,
       transparent calc(var(--cell-size, 120px) + var(--grid-gap, 20px))
     );
-  /* The pattern's own origin is 0,0 (the container's border edge), but the
-     first grid cell actually starts one padding-box inset from there — so
-     the lines have to be shifted by the padding, or they fall mid-gap
-     instead of on the cell boundaries. */
-  background-position: var(--grid-padding, 40px) var(--grid-padding, 40px);
+  /* Lines mark the midpoint of each gap between cells, not a cell edge —
+     otherwise a widget's near edge sits flush against its line while the
+     far edge leaves a full gap before the next one, reading as asymmetric
+     padding around the widget. Offset by padding minus half a gap so the
+     first line falls in the middle of the gap before the first cell. */
+  background-position:
+    calc(var(--grid-padding, 40px) - var(--grid-gap, 20px) / 2)
+    calc(var(--grid-padding, 40px) - var(--grid-gap, 20px) / 2);
   pointer-events: none;
   z-index: 0;
 }
@@ -36,42 +39,104 @@
   position: relative;
   z-index: 1;
   transition: transform var(--transition-spring), width var(--transition-spring), height var(--transition-spring);
+  /* Isolates each cell's layout from its siblings — without this, the
+     browser has to consider whether an animating cell could affect
+     neighbors' layout on every frame, which multiplies with widget count.
+     Not `contain: paint` too: resize handles (.resize-handle-e/-s/-se)
+     intentionally sit a few px outside this element's box via negative
+     offsets, and paint containment would clip them. */
+  contain: layout;
+}
+
+.widget-cell-shake {
+  width: 100%;
+  height: 100%;
 }
 
 .widget-grid .widget-cell.dragging {
   opacity: 0.5;
 }
 
+
 .widget-grid .widget-cell.resizing {
   transition: none;
 }
 
-@keyframes jiggle-a {
-  0%, 100% { transform: rotate(-1deg); }
-  50% { transform: rotate(1deg); }
+/* A single unitless (<number>) custom property, animated once on
+   .widget-grid and inherited by every widget below, drives all of them
+   rotating in sync — instead of each jiggling widget running its own
+   independent `animation: infinite` (a genuinely separate timeline the
+   browser has to tick, style-recalc, and layer-manage on its own), which
+   used to mean N widgets meant N competing animation timelines.
+   Deliberately NOT using @property here: it needs a typed <angle> to let
+   calc() divide by 1deg cleanly, but @property support (and therefore this
+   whole approach) doesn't reach Firefox until version 128 — without it,
+   the browser treats the custom property as an untyped token and the
+   angle-division calc() becomes invalid, silently dropping the entire
+   `transform` declaration and leaving widgets motionless. Keeping the
+   custom property unitless sidesteps that: a plain number multiplies
+   cleanly into deg/px in calc() on every browser, @property or not. */
+/* Custom properties never tween smoothly between keyframe values unless
+   they're registered via @property (see note above) — the browser jumps
+   straight from one value to the next, so a plain 0%/50%/100% keyframe
+   would visibly snap rather than glide. These steps sample a sine wave
+   (one full oscillation) at 5% intervals instead, so each jump is small
+   enough to read as continuous motion at 0.22s per cycle — a shim for the
+   twinning @property would otherwise give for free, but one that works
+   identically in every browser. Values are sin(2*pi*t) at each 5% step. */
+@keyframes jiggle-progress {
+  0% { --jiggle-t: 0; }
+  5% { --jiggle-t: 0.309; }
+  10% { --jiggle-t: 0.588; }
+  15% { --jiggle-t: 0.809; }
+  20% { --jiggle-t: 0.951; }
+  25% { --jiggle-t: 1; }
+  30% { --jiggle-t: 0.951; }
+  35% { --jiggle-t: 0.809; }
+  40% { --jiggle-t: 0.588; }
+  45% { --jiggle-t: 0.309; }
+  50% { --jiggle-t: 0; }
+  55% { --jiggle-t: -0.309; }
+  60% { --jiggle-t: -0.588; }
+  65% { --jiggle-t: -0.809; }
+  70% { --jiggle-t: -0.951; }
+  75% { --jiggle-t: -1; }
+  80% { --jiggle-t: -0.951; }
+  85% { --jiggle-t: -0.809; }
+  90% { --jiggle-t: -0.588; }
+  95% { --jiggle-t: -0.309; }
+  100% { --jiggle-t: 0; }
 }
 
-@keyframes jiggle-b {
-  0%, 100% { transform: rotate(1deg); }
-  50% { transform: rotate(-1deg); }
+.widget-grid.edit-mode {
+  animation: jiggle-progress 0.22s infinite linear;
 }
 
-.widget-grid .widget-cell.edit-mode.jiggle-a {
-  animation: jiggle-a 0.15s infinite ease-in-out;
+.widget-cell-shake.edit-mode {
+  transform: rotate(calc(var(--jiggle-t, -1) * 1deg)) translateX(calc(var(--jiggle-t, -1) * 1px));
+  /* Promotes each jiggling widget to its own compositor layer, so the
+     rotation composites an already-rasterized layer instead of
+     re-rasterizing the widget's content (including its backdrop-filter
+     blur) on every frame. */
+  will-change: transform;
 }
 
-.widget-grid .widget-cell.edit-mode.jiggle-b {
-  animation: jiggle-b 0.16s infinite ease-in-out;
+.widget-cell-shake.edit-mode.jiggle-b {
+  transform: rotate(calc(var(--jiggle-t, -1) * -1deg)) translateX(calc(var(--jiggle-t, -1) * -1px));
 }
 
-.widget-grid .widget-cell.edit-mode.resizing {
-  animation: none;
+.widget-cell-shake.edit-mode.resizing {
+  transform: none;
+  will-change: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .widget-grid .widget-cell.edit-mode.jiggle-a,
-  .widget-grid .widget-cell.edit-mode.jiggle-b {
+  .widget-grid.edit-mode {
     animation: none;
+  }
+  .widget-cell-shake.edit-mode {
+    transform: none;
+    will-change: auto;
     outline: 2px dashed rgba(255, 255, 255, 0.5);
     outline-offset: 2px;
   }
@@ -82,12 +147,29 @@
   z-index: 3;
 }
 
+/* Each handle's hit-area is larger than its visible mark (::after) so it's
+   easy to grab, but only the small mark is shown — a visual affordance
+   that this edge is draggable, without covering the widget's own content
+   the way a full-width highlighted border would. */
 .resize-handle-e {
   top: 12px;
   right: -6px;
   bottom: 12px;
   width: 12px;
   cursor: ew-resize;
+}
+
+.resize-handle-e::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background: var(--color-badge-bg);
+  opacity: 0.55;
 }
 
 .resize-handle-s {
@@ -98,10 +180,45 @@
   cursor: ns-resize;
 }
 
+.resize-handle-s::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 28px;
+  height: 4px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background: var(--color-badge-bg);
+  opacity: 0.55;
+}
+
 .resize-handle-se {
   right: -6px;
   bottom: -6px;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   cursor: nwse-resize;
+}
+
+/* Three diagonal dots, like macOS's own bottom-right resize grip — reads as
+   "drag me" at a glance without needing a full corner triangle. */
+.resize-handle-se::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--color-badge-bg);
+  opacity: 0.55;
+  box-shadow:
+    5px 5px 0 0 var(--color-badge-bg),
+    -5px -5px 0 0 transparent;
+}
+
+.resize-handle:hover::after {
+  opacity: 0.9;
 }

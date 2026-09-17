@@ -1,0 +1,83 @@
+.widget-picker-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--color-surface);
+  backdrop-filter: var(--surface-filter);
+  -webkit-backdrop-filter: var(--surface-filter);
+  box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 30;
+  animation: widget-picker-in var(--transition-spring);
+}
+
+@keyframes widget-picker-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.widget-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.widget-picker-header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.widget-picker-panel .close-btn {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+}
+
+.widget-picker-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.widget-picker-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.widget-picker-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: grab;
+  user-select: none;
+}
+
+.widget-picker-card:active {
+  cursor: grabbing;
+}
+
+.widget-picker-label {
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.widget-picker-empty {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}

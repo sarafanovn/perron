@@ -1,22 +1,22 @@
-.settings-panel {
+.grid-panel {
   position: fixed;
   bottom: 80px;
   right: 24px;
-  width: 320px;
-  max-height: calc(100vh - 104px);
-  background: var(--color-bg-surface-solid);
+  width: 280px;
+  background: var(--color-surface);
+  backdrop-filter: var(--surface-filter);
+  -webkit-backdrop-filter: var(--surface-filter);
   border-radius: var(--radius-widget);
-  box-shadow: var(--shadow-widget);
+  box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
   padding: 24px;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
   z-index: 30;
-  animation: settings-panel-in var(--transition-spring);
+  animation: grid-panel-in var(--transition-spring);
 }
 
-@keyframes settings-panel-in {
+@keyframes grid-panel-in {
   from {
     opacity: 0;
     transform: translateY(12px) scale(0.98);
@@ -27,27 +27,14 @@
   }
 }
 
-.settings-panel h3 {
+.grid-panel h3 {
   margin: 0 0 8px;
   font-size: 13px;
   text-transform: uppercase;
   color: var(--color-text-secondary);
 }
 
-.settings-panel .preset-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.settings-panel .preset-swatch {
-  height: 48px;
-  border-radius: 12px;
-  cursor: pointer;
-  border: 2px solid transparent;
-}
-
-.settings-panel .close-btn {
+.grid-panel .close-btn {
   align-self: flex-end;
   cursor: pointer;
   border: none;
@@ -55,7 +42,7 @@
   font-size: 18px;
 }
 
-.settings-panel label {
+.grid-panel label {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -63,10 +50,10 @@
   color: var(--color-text-secondary);
 }
 
-.settings-panel label + label {
+.grid-panel label + label {
   margin-top: 10px;
 }
 
-.settings-panel input[type='range'] {
+.grid-panel input[type='range'] {
   width: 100%;
 }

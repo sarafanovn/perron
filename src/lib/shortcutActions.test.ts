@@ -1,13 +1,23 @@
 import { describe, it, expect } from 'vitest'
-import { addShortcut, removeShortcut } from './shortcutActions'
+import { addShortcut, addShortcutAt, removeShortcut } from './shortcutActions'
 import { widgetIdForShortcut } from './shortcutWidgets'
 import type { Settings } from './types'
 
 const baseSettings: Settings = {
   version: 1,
-  theme: { accentColor: '#0a84ff', background: { type: 'gradient', value: 'sunset' }, font: 'system' },
+  theme: {
+    accentColor: '#0a84ff',
+    background: { type: 'gradient', value: 'sunset' },
+    font: 'system',
+    mode: 'auto',
+    style: 'glass',
+  },
   search: { engine: 'google' },
+  weather: { dynamicBackground: true },
   shortcuts: [],
+  notes: [],
+  translators: [],
+  clocks: [],
   widgetLayout: [
     { widgetId: 'search', col: 0, row: 0, colSpan: 4, rowSpan: 1 },
     { widgetId: 'weather', col: 0, row: 1, colSpan: 2, rowSpan: 2 },
@@ -36,6 +46,21 @@ describe('addShortcut', () => {
     const original = JSON.parse(JSON.stringify(baseSettings))
     addShortcut(baseSettings, { label: 'GitHub', url: 'https://github.com' })
     expect(baseSettings).toEqual(original)
+  })
+})
+
+describe('addShortcutAt', () => {
+  it('creates an empty shortcut and places it at the given cell', () => {
+    const result = addShortcutAt(baseSettings, 2, 3)
+    expect(result.shortcuts).toHaveLength(1)
+    expect(result.shortcuts[0]).toMatchObject({ label: '', url: '' })
+    const entry = result.widgetLayout.find((w) => w.widgetId === widgetIdForShortcut(result.shortcuts[0].id))
+    expect(entry).toMatchObject({ col: 2, row: 3, colSpan: 1, rowSpan: 1 })
+  })
+
+  it('does not add anything if the target cell is already occupied', () => {
+    const result = addShortcutAt(baseSettings, 0, 0)
+    expect(result).toBe(baseSettings)
   })
 })
 

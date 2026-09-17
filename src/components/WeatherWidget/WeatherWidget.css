@@ -1,36 +1,197 @@
 .weather-widget {
   height: 100%;
   padding: 16px;
-  background: var(--color-bg-surface);
-  backdrop-filter: blur(var(--blur-surface));
-  color: var(--color-text-primary);
+  color: #fff;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+/* Loading/error/city-search states have no weather data yet to derive a
+   background from, so they fall back to the app's normal frosted surface
+   and default text color instead of white-on-nothing. Also used whenever
+   the user turns off the dynamic weather background entirely (see
+   .weather-widget-static below), so the two share one look. */
+.weather-widget.weather-widget-plain {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
   justify-content: center;
-  gap: 8px;
 }
 
-.weather-widget .temp {
-  font-size: 40px;
-  font-weight: 600;
+/* User opted out of the time/condition gradient (theme.weather setting) —
+   render like every other widget instead of the colorful dynamic style.
+   The white text/divider colors below assume a colorful gradient backdrop,
+   so this state overrides them back to the normal surface palette. */
+.weather-widget.weather-widget-static {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
 }
 
-.weather-widget form {
+.weather-widget-static .weather-hourly,
+.weather-widget-static .weather-daily {
+  border-top-color: var(--color-hover-overlay);
+}
+
+.weather-widget-static .weather-current-details,
+.weather-widget-static .weather-hourly-hour {
+  opacity: 1;
+  color: var(--color-text-secondary);
+}
+
+.weather-widget-plain form {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.weather-widget input {
-  border: none;
+.weather-widget-plain input {
   border-radius: 10px;
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.6);
-  font: inherit;
 }
 
-.weather-widget .city-option {
+.weather-widget-plain .city-option {
   cursor: pointer;
   padding: 4px 0;
+  color: var(--color-text-secondary);
+}
+
+.weather-current {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.weather-current-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weather-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.weather-widget .temp {
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.weather-current-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 13px;
+  opacity: 0.9;
+  text-align: right;
+}
+
+.weather-hourly {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.weather-hourly-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.weather-hourly-hour {
+  opacity: 0.8;
+}
+
+.weather-hourly-icon {
+  font-size: 16px;
+}
+
+.weather-daily {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  overflow-y: auto;
+  /* Grows to fill whatever vertical space the current-conditions/hourly/
+     details sections don't use, instead of leaving a gap of empty widget
+     below a short forecast list at the largest (4x4) size. */
+  flex: 1;
+}
+
+.weather-daily-row {
+  display: grid;
+  grid-template-columns: 2.5em 1.5em 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.weather-daily-icon {
+  font-size: 14px;
+}
+
+.weather-daily-min {
+  opacity: 0.7;
+  text-align: right;
+}
+
+.weather-daily-max {
+  text-align: right;
+  font-weight: 500;
+}
+
+.weather-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.weather-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.weather-detail-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+}
+
+.weather-detail-value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.weather-detail-sublabel {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.weather-widget-static .weather-details {
+  border-top-color: var(--color-hover-overlay);
+}
+
+.weather-widget-static .weather-detail-card {
+  background: var(--color-input-bg);
+}
+
+.weather-widget-static .weather-detail-label,
+.weather-widget-static .weather-detail-sublabel {
+  opacity: 1;
   color: var(--color-text-secondary);
 }

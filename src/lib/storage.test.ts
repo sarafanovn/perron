@@ -22,6 +22,65 @@ describe('loadSettings', () => {
     localStorage.setItem(KEY, JSON.stringify(custom))
     expect(loadSettings().theme.accentColor).toBe('#ff0000')
   })
+
+  it('defaults theme.mode to auto when settings were saved before it existed', () => {
+    const { mode: _mode, ...themeWithoutMode } = DEFAULT_SETTINGS.theme
+    const legacy = { ...DEFAULT_SETTINGS, theme: themeWithoutMode }
+    localStorage.setItem(KEY, JSON.stringify(legacy))
+    expect(loadSettings().theme.mode).toBe('auto')
+  })
+
+  it('preserves a valid stored theme.mode', () => {
+    const custom = { ...DEFAULT_SETTINGS, theme: { ...DEFAULT_SETTINGS.theme, mode: 'dark' as const } }
+    localStorage.setItem(KEY, JSON.stringify(custom))
+    expect(loadSettings().theme.mode).toBe('dark')
+  })
+
+  it('defaults theme.style to glass when settings were saved before it existed', () => {
+    const { style: _style, ...themeWithoutStyle } = DEFAULT_SETTINGS.theme
+    const legacy = { ...DEFAULT_SETTINGS, theme: themeWithoutStyle }
+    localStorage.setItem(KEY, JSON.stringify(legacy))
+    expect(loadSettings().theme.style).toBe('glass')
+  })
+
+  it('preserves a valid stored theme.style', () => {
+    const custom = { ...DEFAULT_SETTINGS, theme: { ...DEFAULT_SETTINGS.theme, style: 'plain' as const } }
+    localStorage.setItem(KEY, JSON.stringify(custom))
+    expect(loadSettings().theme.style).toBe('plain')
+  })
+
+  it('defaults weather.dynamicBackground to true when settings were saved before it existed', () => {
+    const { weather: _weather, ...withoutWeather } = DEFAULT_SETTINGS
+    localStorage.setItem(KEY, JSON.stringify(withoutWeather))
+    expect(loadSettings().weather.dynamicBackground).toBe(true)
+  })
+
+  it('preserves a valid stored weather.dynamicBackground', () => {
+    const custom = { ...DEFAULT_SETTINGS, weather: { dynamicBackground: false } }
+    localStorage.setItem(KEY, JSON.stringify(custom))
+    expect(loadSettings().weather.dynamicBackground).toBe(false)
+  })
+
+  it('backfills timeFormat/showDate/showBackground on clocks saved before they existed', () => {
+    const legacy = { ...DEFAULT_SETTINGS, clocks: [{ id: 'c1', style: 'digital' }] }
+    localStorage.setItem(KEY, JSON.stringify(legacy))
+    const clock = loadSettings().clocks[0]
+    expect(clock.timeFormat).toBe('24h')
+    expect(clock.showDate).toBe(true)
+    expect(clock.showBackground).toBe(true)
+  })
+
+  it('preserves a valid stored clock customization', () => {
+    const custom = {
+      ...DEFAULT_SETTINGS,
+      clocks: [{ id: 'c1', style: 'digital' as const, timeFormat: '12h' as const, showDate: false, showBackground: false }],
+    }
+    localStorage.setItem(KEY, JSON.stringify(custom))
+    const clock = loadSettings().clocks[0]
+    expect(clock.timeFormat).toBe('12h')
+    expect(clock.showDate).toBe(false)
+    expect(clock.showBackground).toBe(false)
+  })
 })
 
 describe('saveSettings', () => {

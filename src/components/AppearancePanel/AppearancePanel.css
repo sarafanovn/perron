@@ -1,0 +1,209 @@
+.appearance-panel {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  width: 320px;
+  max-height: calc(100vh - 104px);
+  background: var(--color-surface);
+  backdrop-filter: var(--surface-filter);
+  -webkit-backdrop-filter: var(--surface-filter);
+  border-radius: var(--radius-widget);
+  box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 30;
+  animation: appearance-panel-in var(--transition-spring);
+}
+
+@keyframes appearance-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.appearance-panel h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.appearance-panel .mode-toggle {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--color-input-bg);
+}
+
+.appearance-panel .mode-toggle + .mode-toggle {
+  margin-top: 8px;
+}
+
+.appearance-panel .mode-toggle-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  padding: 8px 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-spring), color var(--transition-spring);
+}
+
+.appearance-panel .mode-toggle-btn.active {
+  background: var(--color-bg-surface-solid);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-widget);
+}
+
+.appearance-panel .preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.appearance-panel .preset-swatch {
+  height: 48px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 2px solid var(--color-hover-overlay);
+  box-sizing: border-box;
+}
+
+.appearance-panel .animated-swatch {
+  background: linear-gradient(135deg, #ff6a88, #7b6cf6, #4fa6e8, #ff9a56);
+  background-size: 200% 200%;
+  animation: animated-swatch-drift 6s ease infinite;
+}
+
+.appearance-panel .animated-swatch.selected {
+  border-color: var(--color-accent);
+}
+
+@keyframes animated-swatch-drift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.appearance-panel .upload-swatch {
+  background: transparent;
+  border: 2px dashed var(--color-hover-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  transition: border-color var(--transition-spring), color var(--transition-spring);
+}
+
+.appearance-panel .upload-swatch:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.appearance-panel .upload-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.appearance-panel .animated-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.appearance-panel .animated-colors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.appearance-panel .animated-color-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.appearance-panel .animated-color-row .remove-color-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-input-bg);
+  color: var(--color-text-secondary);
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.appearance-panel .add-color-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--color-input-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--transition-spring);
+}
+
+.appearance-panel .add-color-btn:hover {
+  background: var(--color-hover-overlay);
+}
+
+.appearance-panel .animated-controls input[type='range'] {
+  width: 100%;
+}
+
+.appearance-panel .close-btn {
+  align-self: flex-end;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+}
+
+.appearance-panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.appearance-panel select {
+  width: 100%;
+  padding: 8px 28px 8px 10px;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+

@@ -1,7 +1,13 @@
-// Apple's "squircle" is a superellipse (|x/a|^n + |y/b|^n = 1) with a high
-// exponent, giving continuous curvature instead of an arc-with-straight-edge
-// transition like border-radius. n=5 is close to what iOS app icons use.
-const SUPERELLIPSE_EXPONENT = 5
+// Apple's "squircle" is a superellipse (|x/a|^n + |y/b|^n = 1), giving
+// continuous curvature instead of an arc-with-straight-edge transition like
+// border-radius. Inscribed edge-to-edge in the rectangle (a = width/2, b =
+// height/2) as done here, a high exponent like n=5 — closer to the flatter
+// curve real iOS app icons use, which are inset from their full bounding
+// square — reads as harder-edged than a plain border-radius at small widget
+// sizes instead of softer. n=3 keeps continuous curvature while staying
+// visibly rounder than border-radius, matching what a squircle should read
+// as on a 60-200px tile.
+const SUPERELLIPSE_EXPONENT = 3
 const POINTS_PER_QUARTER = 24
 
 function superellipsePoint(angle: number, a: number, b: number, n: number): [number, number] {

@@ -1,0 +1,36 @@
+.note-widget {
+  position: relative;
+  height: 100%;
+  background: var(--color-surface);
+}
+
+.note-widget textarea {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  /* The squircle clip curves in more aggressively than a plain
+     border-radius near its corners, so a flush-looking padding still reads
+     as text crowding the top-left edge — extra top/left space keeps the
+     first line clear of the curve at every widget size. */
+  padding: 26px 20px 20px 26px;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+  resize: none;
+  outline: none;
+}
+
+/* In edit mode the textarea is read-only anyway (see NoteWidget.tsx) — but
+   a plain <textarea> still grabs mousedown for text selection/caret
+   placement before the HTML5 drag on its draggable parent (.widget-cell)
+   ever gets a chance to start, making the note effectively undraggable
+   from anywhere except its very edge. Turning off pointer-events here lets
+   every mousedown pass straight through to the parent, so the whole note
+   becomes one drag handle — same as every other widget. */
+.note-widget.edit-mode textarea {
+  pointer-events: none;
+}
+

@@ -10,10 +10,11 @@ describe('sizePresets', () => {
     ])
   })
 
-  it('gives weather a 2x2 and 4x2 preset', () => {
+  it('gives weather 2x2, 4x2, and 4x4 presets', () => {
     expect(sizePresets('weather')).toEqual([
       { colSpan: 2, rowSpan: 2 },
       { colSpan: 4, rowSpan: 2 },
+      { colSpan: 4, rowSpan: 4 },
     ])
   })
 
@@ -31,6 +32,7 @@ describe('closestPreset', () => {
   it('snaps a mid-drag trial size to the closest weather preset', () => {
     expect(closestPreset('weather', 3, 2)).toEqual({ colSpan: 2, rowSpan: 2 })
     expect(closestPreset('weather', 4, 2)).toEqual({ colSpan: 4, rowSpan: 2 })
+    expect(closestPreset('weather', 4, 4)).toEqual({ colSpan: 4, rowSpan: 4 })
   })
 
   it('always returns the single preset for a non-resizable widget', () => {

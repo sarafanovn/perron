@@ -2,7 +2,17 @@
   position: relative;
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.18));
+  /* backdrop-filter lives here, not on the widget content inside, so it's
+     guaranteed to sit inside the clipped/overflow:hidden box that gives this
+     wrapper its squircle or stadium shape. Firefox doesn't reliably clip a
+     descendant's own backdrop-filter to an ancestor's clip-path/overflow —
+     it stays visible past the rounded corners in the wrapper's full
+     rectangle, showing as a square halo around an otherwise correctly
+     rounded shape. --surface-filter is 'none' in the Plain style, so this
+     rule is a no-op there rather than needing a separate branch. */
+  backdrop-filter: var(--surface-filter);
+  -webkit-backdrop-filter: var(--surface-filter);
+  box-shadow: var(--surface-highlight), var(--surface-inset-shadow);
 }
 
 .squircle-content {

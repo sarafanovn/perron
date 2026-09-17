@@ -27,9 +27,14 @@ const SettingsContext = createContext<SettingsContextValue | null>(null)
 
 // `theme.background.value` for type 'gradient' stores a preset id (see
 // DEFAULT_SETTINGS and backgroundPresets.ts); solid and image values are
-// already valid CSS (hex / data URL) and need no lookup.
+// already valid CSS (hex / data URL) and need no lookup. 'animated' stores
+// JSON settings for AnimatedBackground's WebGL canvas, not a CSS value — the
+// page's own CSS background is left transparent so that canvas (rendered
+// behind everything else, see App.tsx) shows through instead of being
+// painted over.
 function backgroundCssValue(settings: Settings): string {
   const { type, value } = settings.theme.background
+  if (type === 'animated') return 'transparent'
   if (type === 'image') return `url(${value})`
   if (type === 'gradient') {
     const preset = BACKGROUND_PRESETS.find((p) => p.id === value)
@@ -70,6 +75,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       root.style.setProperty('--font-family-base', settings.theme.font)
     }
     root.style.setProperty('--page-background', backgroundCssValue(settings))
+    // 'auto' means "no override" — tokens.css's prefers-color-scheme media
+    // query already handles that case on its own, so the attribute is only
+    // set for an explicit Light/Dark choice; removing it here lets a
+    // previous explicit choice fall back to auto without a page reload.
+    if (settings.theme.mode === 'auto') {
+      root.removeAttribute('data-theme')
+    } else {
+      root.setAttribute('data-theme', settings.theme.mode)
+    }
+    // Unlike mode, style has no "auto" state — it's always one of the two,
+    // so the attribute is always set explicitly.
+    root.setAttribute('data-style', settings.theme.style)
   }, [settings])
 
   return (

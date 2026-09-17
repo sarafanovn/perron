@@ -4,11 +4,9 @@ import './ShortcutTile.css'
 
 export function ShortcutTile({
   shortcut,
-  onRemove,
   editMode = false,
 }: {
   shortcut: Shortcut
-  onRemove: (id: string) => void
   editMode?: boolean
 }) {
   return (
@@ -20,19 +18,6 @@ export function ShortcutTile({
         if (editMode) e.preventDefault()
       }}
     >
-      {editMode && (
-        <span
-          className="remove"
-          aria-label={`Remove ${shortcut.label}`}
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onRemove(shortcut.id)
-          }}
-        >
-          ✕
-        </span>
-      )}
       <img src={shortcut.iconUrl ?? faviconUrlFor(shortcut.url)} alt="" />
       {shortcut.label}
     </a>
