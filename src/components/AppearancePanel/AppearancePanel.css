@@ -184,14 +184,6 @@
   width: 100%;
 }
 
-.appearance-panel .close-btn {
-  align-self: flex-end;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  font-size: 18px;
-}
-
 .appearance-panel label {
   display: flex;
   flex-direction: column;

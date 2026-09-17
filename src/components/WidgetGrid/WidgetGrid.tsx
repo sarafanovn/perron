@@ -23,6 +23,7 @@ import { ClockWidget } from '../ClockWidget/ClockWidget'
 import { Squircle } from '../Squircle/Squircle'
 import { WidgetStylePanel } from '../WidgetStylePanel/WidgetStylePanel'
 import { NEW_WIDGET_DRAG_TYPE } from '../WidgetPickerPanel/WidgetPickerPanel'
+import { Icon } from '../Icon/Icon'
 import './WidgetGrid.css'
 
 const GRID_GAP_PX = 20
@@ -497,7 +498,7 @@ export function WidgetGrid() {
                     removeAnyWidget(entry.widgetId)
                   }}
                 >
-                  ✕
+                  <Icon name="close" size={10} />
                 </span>
                 {hasStyleEditor(entry.widgetId) && (
                   <span
@@ -505,7 +506,7 @@ export function WidgetGrid() {
                     aria-label={`Edit ${widgetDisplayName(entry.widgetId)} style`}
                     onClick={(e) => openStyleEditor(e, entry.widgetId)}
                   >
-                    ✎
+                    <Icon name="edit" size={10} />
                   </span>
                 )}
               </>

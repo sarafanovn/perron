@@ -38,13 +38,6 @@
   font-size: 15px;
 }
 
-.widget-picker-panel .close-btn {
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  font-size: 18px;
-}
-
 .widget-picker-hint {
   margin: 0;
   font-size: 13px;

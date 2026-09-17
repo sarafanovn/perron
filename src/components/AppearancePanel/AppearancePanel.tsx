@@ -1,5 +1,6 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { useSettings } from '../../context/SettingsContext'
+import { Icon } from '../Icon/Icon'
 import { SEARCH_ENGINES } from '../../lib/searchEngines'
 import {
   BACKGROUND_PRESETS,
@@ -126,7 +127,7 @@ export function AppearancePanel({ open, onClose }: { open: boolean; onClose: () 
   return (
     <div className="appearance-panel">
       <button className="close-btn" aria-label="Close appearance settings" onClick={onClose}>
-        ✕
+        <Icon name="close" />
       </button>
 
       <div>
@@ -230,7 +231,7 @@ export function AppearancePanel({ open, onClose }: { open: boolean; onClose: () 
                       className="remove-color-btn"
                       onClick={() => removeAnimatedColor(i)}
                     >
-                      ✕
+                      <Icon name="close" size={10} />
                     </button>
                   )}
                 </div>

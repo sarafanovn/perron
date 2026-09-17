@@ -34,14 +34,6 @@
   color: var(--color-text-secondary);
 }
 
-.grid-panel .close-btn {
-  align-self: flex-end;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  font-size: 18px;
-}
-
 .grid-panel label {
   display: flex;
   flex-direction: column;

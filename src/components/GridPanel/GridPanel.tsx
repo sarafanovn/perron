@@ -1,4 +1,5 @@
 import { useSettings } from '../../context/SettingsContext'
+import { Icon } from '../Icon/Icon'
 import './GridPanel.css'
 
 const MIN_COLUMNS = 4
@@ -24,7 +25,7 @@ export function GridPanel({ open, onClose }: { open: boolean; onClose: () => voi
   return (
     <div className="grid-panel">
       <button className="close-btn" aria-label="Close grid settings" onClick={onClose}>
-        ✕
+        <Icon name="close" />
       </button>
 
       <div>

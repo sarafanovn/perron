@@ -11,13 +11,16 @@
 .edit-fab-main {
   width: 44px;
   height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   border-radius: 50%;
   background: var(--color-surface);
   backdrop-filter: var(--surface-filter);
   -webkit-backdrop-filter: var(--surface-filter);
   box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
-  font-size: 16px;
+  color: var(--color-text-primary);
   cursor: pointer;
 }
 
@@ -58,10 +61,13 @@
 .edit-fab-option {
   width: 36px;
   height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   border-radius: 50%;
   background: transparent;
-  font-size: 16px;
+  color: var(--color-text-primary);
   cursor: pointer;
 }
 

@@ -33,12 +33,8 @@
 }
 
 .widget-style-panel .close-btn {
-  align-self: flex-end;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  font-size: 14px;
-  color: var(--color-text-secondary);
+  width: 20px;
+  height: 20px;
 }
 
 .widget-style-panel form {

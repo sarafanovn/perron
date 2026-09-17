@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Icon } from '../Icon/Icon'
 import type { Clock, Shortcut } from '../../lib/types'
 import './WidgetStylePanel.css'
 
@@ -23,7 +24,7 @@ export function WidgetStylePanel({ anchor, onClose, target }: BaseProps & { targ
   return (
     <div className="widget-style-panel" style={{ left: anchor.x, top: anchor.y }}>
       <button className="close-btn" aria-label="Close style editor" onClick={onClose}>
-        ✕
+        <Icon name="close" size={12} />
       </button>
       {target.kind === 'weather' && <WeatherStyleFields target={target} />}
       {target.kind === 'clock' && <ClockStyleFields target={target} />}

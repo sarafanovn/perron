@@ -1,6 +1,7 @@
 import type { DragEvent } from 'react'
 import { useSettings } from '../../context/SettingsContext'
 import { WidgetPreview, type PreviewWidgetId } from '../WidgetPreview/WidgetPreview'
+import { Icon } from '../Icon/Icon'
 import type { ClockStyle } from '../../lib/types'
 import './WidgetPickerPanel.css'
 
@@ -83,7 +84,7 @@ export function WidgetPickerPanel({ open, onClose }: { open: boolean; onClose: (
       <div className="widget-picker-header">
         <h3>Add widget</h3>
         <button className="close-btn" aria-label="Close widget picker" onClick={onClose}>
-          ✕
+          <Icon name="close" />
         </button>
       </div>
       <p className="widget-picker-hint">Drag a widget onto the grid to place it.</p>
