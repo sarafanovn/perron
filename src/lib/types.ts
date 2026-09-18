@@ -14,18 +14,22 @@ export interface BackgroundSettings {
   value: string
 }
 
+// Backed by the Vanta.js FOG effect (see AnimatedBackground.tsx), which
+// takes exactly 4 named color slots rather than an arbitrary-length
+// palette — base is the backdrop the other three blend over.
 export interface AnimatedBackgroundSettings {
-  // 2-4 hex colors the shader's noise field blends between.
-  colors: string[]
-  // 0-100. How strong the film-grain noise overlaid on the gradient is;
-  // 0 is a perfectly smooth blend, 100 is heavily grainy.
-  grain: number
-  // 0-100. How fast the color field drifts over time.
+  baseColor: string
+  lowlightColor: string
+  midtoneColor: string
+  highlightColor: string
+  // 0-100. How fast the fog drifts over time.
   speed: number
-  // 0-100. Spatial frequency of the noise field shaping the color blobs;
-  // low values read as a few large soft regions, high values as many small
-  // intricate ones.
-  detail: number
+  // 0-100. Spatial zoom of the noise field: low values read as a few large
+  // soft regions, high values as many small intricate ones.
+  zoom: number
+  // 0-100. Vanta's blurFactor — how much the color bands bleed into each
+  // other; 0 is the softest, widest bleed, 100 is the most separated.
+  blurFactor: number
 }
 
 export type ThemeMode = 'light' | 'dark' | 'auto'

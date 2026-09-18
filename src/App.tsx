@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { SettingsProvider, useSettings } from './context/SettingsContext'
+import { GlassLensProvider } from './context/GlassLensContext'
 import { WidgetGrid } from './components/WidgetGrid/WidgetGrid'
 import { AppearancePanel } from './components/AppearancePanel/AppearancePanel'
 import { GridPanel } from './components/GridPanel/GridPanel'
 import { WidgetPickerPanel } from './components/WidgetPickerPanel/WidgetPickerPanel'
 import { EditFab, type EditFabAction } from './components/EditFab/EditFab'
 import { AnimatedBackground } from './components/AnimatedBackground/AnimatedBackground'
-import { GlassFilter } from './components/GlassFilter/GlassFilter'
+import { GlassLensBackground } from './components/GlassLensBackground/GlassLensBackground'
 import { parseAnimatedBackground } from './lib/backgroundPresets'
 import './App.css'
 
@@ -33,22 +34,31 @@ function EditControls() {
   )
 }
 
-function AppRootBackground() {
+function AppBackgroundLayers() {
   const { settings } = useSettings()
   const { background } = settings.theme
-  if (background.type !== 'animated') return null
-  return <AnimatedBackground settings={parseAnimatedBackground(background.value)} />
+  const [vantaCanvas, setVantaCanvas] = useState<HTMLCanvasElement | null>(null)
+
+  return (
+    <>
+      {background.type === 'animated' && (
+        <AnimatedBackground settings={parseAnimatedBackground(background.value)} onCanvasReady={setVantaCanvas} />
+      )}
+      {settings.theme.style === 'glass' && <GlassLensBackground background={background} vantaCanvas={vantaCanvas} />}
+    </>
+  )
 }
 
 export default function App() {
   return (
     <SettingsProvider>
-      <div className="app-root">
-        <GlassFilter />
-        <AppRootBackground />
-        <WidgetGrid />
-        <EditControls />
-      </div>
+      <GlassLensProvider>
+        <div className="app-root">
+          <AppBackgroundLayers />
+          <WidgetGrid />
+          <EditControls />
+        </div>
+      </GlassLensProvider>
     </SettingsProvider>
   )
 }

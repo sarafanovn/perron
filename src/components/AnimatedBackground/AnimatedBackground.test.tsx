@@ -5,25 +5,27 @@ import { AnimatedBackground } from './AnimatedBackground'
 import type { AnimatedBackgroundSettings } from '../../lib/types'
 
 const SETTINGS: AnimatedBackgroundSettings = {
-  colors: ['#ff6a88', '#7b6cf6'],
-  grain: 35,
+  baseColor: '#ffebeb',
+  lowlightColor: '#2d00ff',
+  midtoneColor: '#ff1f00',
+  highlightColor: '#ffc300',
   speed: 30,
-  detail: 40,
+  zoom: 40,
+  blurFactor: 60,
 }
 
 afterEach(cleanup)
 
 describe('AnimatedBackground', () => {
-  it('renders a full-viewport canvas', () => {
+  it('renders a full-viewport host element for the Vanta effect', () => {
     const { container } = render(<AnimatedBackground settings={SETTINGS} />)
-    const canvas = container.querySelector('canvas.animated-background')
-    expect(canvas).not.toBeNull()
+    expect(container.querySelector('.animated-background')).not.toBeNull()
   })
 
   it('does not throw when the environment has no WebGL support (e.g. jsdom)', () => {
-    // jsdom's canvas.getContext('webgl') returns null, so this exercises the
-    // createGradientRenderer-returned-null / early-return path in the mount
-    // effect rather than an actual render loop.
+    // jsdom's canvas.getContext('webgl') returns null, so Vanta/three.js's
+    // own WebGLRenderer setup fails internally — this exercises that
+    // fallback path rather than an actual render loop.
     expect(() => render(<AnimatedBackground settings={SETTINGS} />)).not.toThrow()
   })
 })

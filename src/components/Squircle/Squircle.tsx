@@ -66,12 +66,10 @@ export function Squircle({
     return () => observer.disconnect()
   }, [shape])
 
-  // overflow: hidden backstops clip-path here: Firefox doesn't reliably clip
-  // a descendant's backdrop-filter to a `path()` clip-path on this wrapper —
-  // the blur stays visible past the squircle's rounded corners, in the
-  // wrapper's full untouched rectangle, even though the wrapper's own
-  // background and clip-path are themselves correct. overflow: hidden forces
-  // a real clipping box that backdrop-filter compositing respects.
+  // overflow: hidden clips this wrapper's own content (text, images, the
+  // translucent --color-surface tint) to its shape — clip-path alone
+  // doesn't reliably clip everything a descendant can paint in every
+  // browser, so both are applied together.
   const style =
     shape === 'stadium'
       ? { borderRadius: '9999px', overflow: 'hidden' as const }

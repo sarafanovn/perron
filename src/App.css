@@ -2,6 +2,14 @@
   position: relative;
   min-height: 100vh;
   background: var(--page-background);
+  /* Only affects an uploaded 'image' background (gradients/solid colors
+     ignore size/position/repeat) — fills the viewport with one copy of the
+     image, cropped to cover rather than left at its native size in the
+     corner or tiled across the page. */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   display: flex;
   align-items: center;
   justify-content: center;

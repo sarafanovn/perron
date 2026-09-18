@@ -1,7 +1,5 @@
 import type { AnimatedBackgroundSettings } from './types'
 
-export const MAX_BACKGROUND_IMAGE_BYTES = 4_500_000
-
 export const BACKGROUND_PRESETS: Array<{ id: string; label: string; css: string }> = [
   { id: 'sunset', label: 'Sunset', css: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)' },
   { id: 'ocean', label: 'Ocean', css: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)' },
@@ -12,10 +10,13 @@ export const BACKGROUND_PRESETS: Array<{ id: string; label: string; css: string 
 ]
 
 export const DEFAULT_ANIMATED_BACKGROUND: AnimatedBackgroundSettings = {
-  colors: ['#ff6a88', '#7b6cf6', '#4fa6e8', '#ff9a56'],
-  grain: 35,
+  baseColor: '#ffebeb',
+  lowlightColor: '#2d00ff',
+  midtoneColor: '#ff1f00',
+  highlightColor: '#ffc300',
   speed: 30,
-  detail: 40,
+  zoom: 40,
+  blurFactor: 60,
 }
 
 /**
@@ -30,13 +31,13 @@ export function parseAnimatedBackground(value: string): AnimatedBackgroundSettin
   try {
     const parsed = JSON.parse(value)
     if (
-      !Array.isArray(parsed.colors) ||
-      parsed.colors.length < 2 ||
-      parsed.colors.length > 4 ||
-      !parsed.colors.every((c: unknown) => typeof c === 'string') ||
-      typeof parsed.grain !== 'number' ||
+      typeof parsed.baseColor !== 'string' ||
+      typeof parsed.lowlightColor !== 'string' ||
+      typeof parsed.midtoneColor !== 'string' ||
+      typeof parsed.highlightColor !== 'string' ||
       typeof parsed.speed !== 'number' ||
-      typeof parsed.detail !== 'number'
+      typeof parsed.zoom !== 'number' ||
+      typeof parsed.blurFactor !== 'number'
     ) {
       return DEFAULT_ANIMATED_BACKGROUND
     }
