@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render } from '@testing-library/react'
+import { useEffect } from 'react'
 import { Squircle } from './Squircle'
+import { GlassLensProvider, useGlassLensRegistry } from '../../context/GlassLensContext'
+
+function LensCount({ onCount }: { onCount: (n: number) => void }) {
+  const { getSnapshot } = useGlassLensRegistry()
+  useEffect(() => {
+    onCount(getSnapshot().length)
+  })
+  return null
+}
 
 class MockResizeObserver {
   callback: ResizeObserverCallback
@@ -67,5 +77,20 @@ describe('Squircle', () => {
     expect(wrapper.style.borderRadius).toBe('var(--radius-widget)')
     expect(wrapper.style.overflow).toBe('hidden')
     expect(wrapper.style.clipPath).toBe('')
+  })
+
+  it('registers itself as a glass lens while mounted', () => {
+    vi.stubGlobal('ResizeObserver', MockResizeObserver)
+    let count = -1
+    const { unmount } = render(
+      <GlassLensProvider>
+        <Squircle shape="rounded">
+          <div>content</div>
+        </Squircle>
+        <LensCount onCount={(n) => (count = n)} />
+      </GlassLensProvider>
+    )
+    expect(count).toBe(1)
+    unmount()
   })
 })

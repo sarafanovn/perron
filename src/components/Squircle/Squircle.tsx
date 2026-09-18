@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { squirclePath } from '../../lib/squircle'
 import type { WidgetShape } from '../../lib/widgetShapes'
+import { useGlassLens } from '../../context/GlassLensContext'
 import './Squircle.css'
 
 /**
@@ -37,6 +38,8 @@ export function Squircle({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [clipPath, setClipPath] = useState<string | undefined>(undefined)
+
+  useGlassLens(ref, shape, true)
 
   useLayoutEffect(() => {
     if (shape !== 'squircle') {
