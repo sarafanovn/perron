@@ -1,11 +1,21 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { SettingsProvider } from '../../context/SettingsContext'
 import { AppearancePanel } from './AppearancePanel'
 import { loadSettings } from '../../lib/storage'
 
+// The mock stands in for real compression (which needs canvas/worker APIs
+// jsdom doesn't provide) by returning a small file instead of the original,
+// so tests can assert the component used the compressed result without
+// depending on the library's actual pixel-crunching.
+vi.mock('browser-image-compression', () => ({
+  default: vi.fn(async () => new File([new Uint8Array(100)], 'compressed.jpg', { type: 'image/jpeg' })),
+}))
+import imageCompression from 'browser-image-compression'
+
 beforeEach(() => {
   localStorage.clear()
+  vi.mocked(imageCompression).mockClear()
 })
 
 describe('AppearancePanel', () => {
@@ -94,7 +104,7 @@ describe('AppearancePanel', () => {
     expect(loadSettings().search.engine).toBe('yandex')
   })
 
-  it('warns and does not persist when an uploaded image is too large', () => {
+  it('compresses an oversized image instead of rejecting it, then persists it', async () => {
     render(
       <SettingsProvider>
         <AppearancePanel open={true} onClose={() => {}} />
@@ -103,7 +113,39 @@ describe('AppearancePanel', () => {
     const bigFile = new File([new Uint8Array(5_000_000)], 'big.png', { type: 'image/png' })
     const input = screen.getByLabelText('Upload background image') as HTMLInputElement
     fireEvent.change(input, { target: { files: [bigFile] } })
-    expect(screen.getByText(/too large/i)).toBeInTheDocument()
+
+    expect(imageCompression).toHaveBeenCalledWith(bigFile, expect.objectContaining({ maxSizeMB: expect.any(Number) }))
+    await waitFor(() => expect(loadSettings().theme.background.type).toBe('image'))
+    expect(screen.queryByText(/too large/i)).not.toBeInTheDocument()
+  })
+
+  it('does not compress a small image, and still persists it', async () => {
+    render(
+      <SettingsProvider>
+        <AppearancePanel open={true} onClose={() => {}} />
+      </SettingsProvider>
+    )
+    const smallFile = new File([new Uint8Array(1000)], 'small.png', { type: 'image/png' })
+    const input = screen.getByLabelText('Upload background image') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [smallFile] } })
+
+    await waitFor(() => expect(loadSettings().theme.background.type).toBe('image'))
+    expect(imageCompression).not.toHaveBeenCalled()
+  })
+
+  it('shows an error when compression fails, without persisting a broken image', async () => {
+    vi.mocked(imageCompression).mockRejectedValueOnce(new Error('nope'))
+    render(
+      <SettingsProvider>
+        <AppearancePanel open={true} onClose={() => {}} />
+      </SettingsProvider>
+    )
+    const bigFile = new File([new Uint8Array(5_000_000)], 'big.png', { type: 'image/png' })
+    const input = screen.getByLabelText('Upload background image') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [bigFile] } })
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(loadSettings().theme.background.type).not.toBe('image')
   })
 
   it('calls onClose when the close button is clicked', () => {

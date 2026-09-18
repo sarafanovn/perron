@@ -5,8 +5,6 @@
   bottom: 0;
   width: 280px;
   background: var(--color-surface);
-  backdrop-filter: var(--surface-filter);
-  -webkit-backdrop-filter: var(--surface-filter);
   box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
   padding: 24px;
   display: flex;

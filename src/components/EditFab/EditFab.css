@@ -17,8 +17,6 @@
   border: none;
   border-radius: 50%;
   background: var(--color-surface);
-  backdrop-filter: var(--surface-filter);
-  -webkit-backdrop-filter: var(--surface-filter);
   box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
   color: var(--color-text-primary);
   cursor: pointer;
@@ -32,8 +30,6 @@
   width: 44px;
   border-radius: 22px;
   background: var(--color-surface);
-  backdrop-filter: var(--surface-filter);
-  -webkit-backdrop-filter: var(--surface-filter);
   box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
   padding: 0;
   max-height: 0;

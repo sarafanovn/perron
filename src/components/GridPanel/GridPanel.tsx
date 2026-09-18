@@ -1,4 +1,6 @@
+import { useRef } from 'react'
 import { useSettings } from '../../context/SettingsContext'
+import { useGlassLens } from '../../context/GlassLensContext'
 import { Icon } from '../Icon/Icon'
 import './GridPanel.css'
 
@@ -9,6 +11,8 @@ const MAX_ROWS = 16
 
 export function GridPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { settings, update, saveError, setIsAdjustingGrid, pingGridAdjustment } = useSettings()
+  const panelRef = useRef<HTMLDivElement>(null)
+  useGlassLens(panelRef, 'rounded', open)
 
   if (!open) return null
 
@@ -23,7 +27,7 @@ export function GridPanel({ open, onClose }: { open: boolean; onClose: () => voi
   }
 
   return (
-    <div className="grid-panel">
+    <div className="grid-panel" ref={panelRef}>
       <button className="close-btn" aria-label="Close grid settings" onClick={onClose}>
         <Icon name="close" />
       </button>

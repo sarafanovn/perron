@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { Icon } from '../Icon/Icon'
+import { useGlassLens } from '../../context/GlassLensContext'
 import type { Clock, Shortcut } from '../../lib/types'
 import './WidgetStylePanel.css'
 
@@ -21,8 +22,11 @@ type StyleTarget =
  * surface) instead of a separate floating panel component per widget type.
  */
 export function WidgetStylePanel({ anchor, onClose, target }: BaseProps & { target: StyleTarget }) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  useGlassLens(panelRef, 'rounded', true)
+
   return (
-    <div className="widget-style-panel" style={{ left: anchor.x, top: anchor.y }}>
+    <div className="widget-style-panel" style={{ left: anchor.x, top: anchor.y }} ref={panelRef}>
       <button className="close-btn" aria-label="Close style editor" onClick={onClose}>
         <Icon name="close" size={12} />
       </button>

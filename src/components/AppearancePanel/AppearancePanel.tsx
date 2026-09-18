@@ -1,15 +1,19 @@
 import { useRef, useState, type ChangeEvent } from 'react'
+import imageCompression from 'browser-image-compression'
 import { useSettings } from '../../context/SettingsContext'
+import { useGlassLens } from '../../context/GlassLensContext'
 import { Icon } from '../Icon/Icon'
 import { SEARCH_ENGINES } from '../../lib/searchEngines'
-import {
-  BACKGROUND_PRESETS,
-  MAX_BACKGROUND_IMAGE_BYTES,
-  DEFAULT_ANIMATED_BACKGROUND,
-  parseAnimatedBackground,
-} from '../../lib/backgroundPresets'
+import { BACKGROUND_PRESETS, DEFAULT_ANIMATED_BACKGROUND, parseAnimatedBackground } from '../../lib/backgroundPresets'
 import type { AnimatedBackgroundSettings, SearchEngineId, ThemeMode, ThemeStyle } from '../../lib/types'
 import './AppearancePanel.css'
+
+// Background images are stored as a base64 data URL directly in the
+// settings blob (localStorage), which typically caps out around 5-10MB per
+// origin — so instead of rejecting a large upload outright, every image is
+// compressed down to fit comfortably under that ceiling (with headroom for
+// base64's ~33% size overhead and everything else already in settings).
+const MAX_BACKGROUND_IMAGE_MB = 2
 
 const FONT_OPTIONS = [
   { id: 'system', label: 'System (SF Pro-like)' },
@@ -31,7 +35,10 @@ const STYLE_OPTIONS: { id: ThemeStyle; label: string }[] = [
 export function AppearancePanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { settings, update, saveError } = useSettings()
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [isCompressing, setIsCompressing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  useGlassLens(panelRef, 'rounded', open)
 
   if (!open) return null
 
@@ -82,23 +89,7 @@ export function AppearancePanel({ open, onClose }: { open: boolean; onClose: () 
     })
   }
 
-  function setAnimatedColor(index: number, hex: string) {
-    const colors = [...animated.colors]
-    colors[index] = hex
-    patchAnimatedBackground({ colors })
-  }
-
-  function addAnimatedColor() {
-    if (animated.colors.length >= 4) return
-    patchAnimatedBackground({ colors: [...animated.colors, '#ffffff'] })
-  }
-
-  function removeAnimatedColor(index: number) {
-    if (animated.colors.length <= 2) return
-    patchAnimatedBackground({ colors: animated.colors.filter((_, i) => i !== index) })
-  }
-
-  function setFont(value: string) {
+function setFont(value: string) {
     update((current) => ({ ...current, theme: { ...current.theme, font: value } }))
   }
 
@@ -106,26 +97,45 @@ export function AppearancePanel({ open, onClose }: { open: boolean; onClose: () 
     update((current) => ({ ...current, search: { engine: value } }))
   }
 
-  function handleUpload(e: ChangeEvent<HTMLInputElement>) {
+  async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > MAX_BACKGROUND_IMAGE_BYTES) {
-      setUploadError('That image is too large. Please choose a smaller file.')
+    setUploadError(null)
+    setIsCompressing(true)
+    let toStore: File | Blob = file
+    try {
+      // Only touches oversized images — an already-small file is returned
+      // essentially as-is, so this doesn't add a quality hit to uploads
+      // that never needed compressing in the first place.
+      if (file.size > MAX_BACKGROUND_IMAGE_MB * 1024 * 1024) {
+        toStore = await imageCompression(file, {
+          maxSizeMB: MAX_BACKGROUND_IMAGE_MB,
+          maxWidthOrHeight: 2560,
+          useWebWorker: true,
+        })
+      }
+    } catch {
+      setIsCompressing(false)
+      setUploadError("Couldn't process that image. Please try a different file.")
       return
     }
-    setUploadError(null)
     const reader = new FileReader()
     reader.onload = () => {
+      setIsCompressing(false)
       update((current) => ({
         ...current,
         theme: { ...current.theme, background: { type: 'image', value: reader.result as string } },
       }))
     }
-    reader.readAsDataURL(file)
+    reader.onerror = () => {
+      setIsCompressing(false)
+      setUploadError("Couldn't process that image. Please try a different file.")
+    }
+    reader.readAsDataURL(toStore)
   }
 
   return (
-    <div className="appearance-panel">
+    <div className="appearance-panel" ref={panelRef}>
       <button className="close-btn" aria-label="Close appearance settings" onClick={onClose}>
         <Icon name="close" />
       </button>
@@ -193,13 +203,14 @@ export function AppearancePanel({ open, onClose }: { open: boolean; onClose: () 
             onClick={setAnimatedBackground}
           />
           <div
-            aria-label="Choose background image"
+            aria-label={isCompressing ? 'Compressing image' : 'Choose background image'}
+            aria-busy={isCompressing}
             role="button"
             tabIndex={0}
-            className="preset-swatch upload-swatch"
-            onClick={() => fileInputRef.current?.click()}
+            className={`preset-swatch upload-swatch${isCompressing ? ' compressing' : ''}`}
+            onClick={() => !isCompressing && fileInputRef.current?.click()}
           >
-            +
+            {isCompressing ? <span className="upload-spinner" /> : '+'}
           </div>
           <input
             ref={fileInputRef}
@@ -216,44 +227,32 @@ export function AppearancePanel({ open, onClose }: { open: boolean; onClose: () 
         {isAnimated && (
           <div className="animated-controls">
             <div className="animated-colors">
-              {animated.colors.map((hex, i) => (
-                <div key={i} className="animated-color-row">
-                  <input
-                    aria-label={`Animated background color ${i + 1}`}
-                    type="color"
-                    value={hex}
-                    onChange={(e) => setAnimatedColor(i, e.target.value)}
-                  />
-                  {animated.colors.length > 2 && (
-                    <button
-                      type="button"
-                      aria-label={`Remove color ${i + 1}`}
-                      className="remove-color-btn"
-                      onClick={() => removeAnimatedColor(i)}
-                    >
-                      <Icon name="close" size={10} />
-                    </button>
-                  )}
-                </div>
-              ))}
-              {animated.colors.length < 4 && (
-                <button type="button" className="add-color-btn" onClick={addAnimatedColor}>
-                  + Color
-                </button>
-              )}
+              <input
+                aria-label="Background base color"
+                type="color"
+                value={animated.baseColor}
+                onChange={(e) => patchAnimatedBackground({ baseColor: e.target.value })}
+              />
+              <input
+                aria-label="Background lowlight color"
+                type="color"
+                value={animated.lowlightColor}
+                onChange={(e) => patchAnimatedBackground({ lowlightColor: e.target.value })}
+              />
+              <input
+                aria-label="Background midtone color"
+                type="color"
+                value={animated.midtoneColor}
+                onChange={(e) => patchAnimatedBackground({ midtoneColor: e.target.value })}
+              />
+              <input
+                aria-label="Background highlight color"
+                type="color"
+                value={animated.highlightColor}
+                onChange={(e) => patchAnimatedBackground({ highlightColor: e.target.value })}
+              />
             </div>
 
-            <label>
-              Grain
-              <input
-                aria-label="Grain"
-                type="range"
-                min={0}
-                max={100}
-                value={animated.grain}
-                onChange={(e) => patchAnimatedBackground({ grain: Number(e.target.value) })}
-              />
-            </label>
             <label>
               Speed
               <input
@@ -266,14 +265,25 @@ export function AppearancePanel({ open, onClose }: { open: boolean; onClose: () 
               />
             </label>
             <label>
-              Detail
+              Zoom
               <input
-                aria-label="Detail"
+                aria-label="Zoom"
                 type="range"
                 min={0}
                 max={100}
-                value={animated.detail}
-                onChange={(e) => patchAnimatedBackground({ detail: Number(e.target.value) })}
+                value={animated.zoom}
+                onChange={(e) => patchAnimatedBackground({ zoom: Number(e.target.value) })}
+              />
+            </label>
+            <label>
+              Blur
+              <input
+                aria-label="Blur"
+                type="range"
+                min={0}
+                max={100}
+                value={animated.blurFactor}
+                onChange={(e) => patchAnimatedBackground({ blurFactor: Number(e.target.value) })}
               />
             </label>
           </div>

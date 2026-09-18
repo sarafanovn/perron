@@ -1,4 +1,6 @@
+import { useRef } from 'react'
 import { Icon } from '../Icon/Icon'
+import { useGlassLens } from '../../context/GlassLensContext'
 import './EditFab.css'
 
 export type EditFabAction = 'appearance' | 'grid' | 'widgets'
@@ -19,9 +21,14 @@ export function EditFab({
   // badges) as soon as the pill is visible, not only once a panel opens.
   onHover: () => void
 }) {
+  const pillRef = useRef<HTMLDivElement>(null)
+  const mainRef = useRef<HTMLButtonElement>(null)
+  useGlassLens(pillRef, 'stadium', true)
+  useGlassLens(mainRef, 'squircle', true)
+
   return (
     <div className="edit-fab" onMouseEnter={onHover} onFocus={onHover}>
-      <div className="edit-fab-pill">
+      <div className="edit-fab-pill" ref={pillRef}>
         <button className="edit-fab-option" aria-label="Appearance" onClick={() => onSelect('appearance')}>
           <Icon name="palette" />
         </button>
@@ -32,7 +39,7 @@ export function EditFab({
           <Icon name="plus" />
         </button>
       </div>
-      <button className="edit-fab-main" aria-label="Edit">
+      <button className="edit-fab-main" aria-label="Edit" ref={mainRef}>
         <Icon name="edit" />
       </button>
     </div>

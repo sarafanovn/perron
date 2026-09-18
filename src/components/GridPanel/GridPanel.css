@@ -4,8 +4,6 @@
   right: 24px;
   width: 280px;
   background: var(--color-surface);
-  backdrop-filter: var(--surface-filter);
-  -webkit-backdrop-filter: var(--surface-filter);
   border-radius: var(--radius-widget);
   box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
   padding: 24px;

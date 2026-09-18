@@ -5,8 +5,6 @@
   width: 320px;
   max-height: calc(100vh - 104px);
   background: var(--color-surface);
-  backdrop-filter: var(--surface-filter);
-  -webkit-backdrop-filter: var(--surface-filter);
   border-radius: var(--radius-widget);
   box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
   padding: 24px;
@@ -112,6 +110,26 @@
 .appearance-panel .upload-swatch:hover {
   border-color: var(--color-accent);
   color: var(--color-accent);
+}
+
+.appearance-panel .upload-swatch.compressing {
+  cursor: default;
+  border-color: var(--color-accent);
+}
+
+.appearance-panel .upload-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-hover-overlay);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: upload-spinner-spin 0.7s linear infinite;
+}
+
+@keyframes upload-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .appearance-panel .upload-input-hidden {
