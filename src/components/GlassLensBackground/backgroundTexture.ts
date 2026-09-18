@@ -16,15 +16,68 @@ function resolveCssBackground(kind: StaticBackgroundKind, cssValue: string): str
   return preset ? preset.css : cssValue
 }
 
-// Canvas 2D's fillStyle accepts the same CSS <color>/<gradient> syntax the
-// spec defines (a subset of full CSS, but linear-gradient and solid colors
-// both fall within it) — delegating to it avoids hand-rolling a parser for
-// gradient stops/angles that the browser already understands natively.
+const LINEAR_GRADIENT_RE = /^linear-gradient\(\s*([\d.]+)deg\s*,\s*(.+)\)$/i
+const GRADIENT_STOP_RE = /(#[0-9a-f]{3,8}|rgba?\([^)]+\))\s+([\d.]+)%/gi
+
+interface ParsedGradient {
+  angleDeg: number
+  stops: Array<{ color: string; offset: number }>
+}
+
+// Canvas 2D's fillStyle does NOT accept CSS gradient syntax as a string
+// (only solid <color> values) — a linear-gradient(...) string silently
+// falls back to black rather than throwing, which is what made every
+// gradient-background lens render as a black/grey wash before this was
+// caught. BACKGROUND_PRESETS only ever uses this one
+// `linear-gradient(<N>deg, <hex> <N>%, ...)` shape, so a small dedicated
+// parser is enough — no need for a general CSS <image> parser.
+export function parseLinearGradient(css: string): ParsedGradient | null {
+  const match = LINEAR_GRADIENT_RE.exec(css.trim())
+  if (!match) return null
+  const stops: Array<{ color: string; offset: number }> = []
+  for (const stopMatch of match[2].matchAll(GRADIENT_STOP_RE)) {
+    stops.push({ color: stopMatch[1], offset: Number(stopMatch[2]) / 100 })
+  }
+  if (stops.length < 2) return null
+  return { angleDeg: Number(match[1]), stops }
+}
+
+// CSS gradient angles are measured clockwise from "up" (0deg = bottom to
+// top), unlike the atan2/trig convention canvas coordinates use (0 = along
+// +x) — this converts a CSS angle into the start/end point pair
+// createLinearGradient expects, sized to fully span a width x height box
+// at that angle.
+export function gradientLineEndpoints(angleDeg: number, width: number, height: number) {
+  const rad = (angleDeg * Math.PI) / 180
+  const dx = Math.sin(rad)
+  const dy = -Math.cos(rad)
+  const halfLength = (Math.abs(dx) * width + Math.abs(dy) * height) / 2
+  const cx = width / 2
+  const cy = height / 2
+  return {
+    x0: cx - dx * halfLength,
+    y0: cy - dy * halfLength,
+    x1: cx + dx * halfLength,
+    y1: cy + dy * halfLength,
+  }
+}
+
 // `ctx` is null only in test environments without a real canvas rasterizer
 // (jsdom without the native `canvas` package) — every real browser always
 // returns a 2D context for a freshly created <canvas>.
 function paintCssBackground(ctx: CanvasRenderingContext2D | null, css: string, width: number, height: number) {
   if (!ctx) return
+
+  const gradient = parseLinearGradient(css)
+  if (gradient) {
+    const { x0, y0, x1, y1 } = gradientLineEndpoints(gradient.angleDeg, width, height)
+    const canvasGradient = ctx.createLinearGradient(x0, y0, x1, y1)
+    for (const stop of gradient.stops) canvasGradient.addColorStop(stop.offset, stop.color)
+    ctx.fillStyle = canvasGradient
+    ctx.fillRect(0, 0, width, height)
+    return
+  }
+
   ctx.fillStyle = css
   ctx.fillRect(0, 0, width, height)
 }

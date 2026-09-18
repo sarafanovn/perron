@@ -59,13 +59,17 @@ export function GlassLensBackground({
       if (document.hidden) return
 
       const dpr = canvas!.width / window.innerWidth
+      // getBoundingClientRect() is top-left-origin (y grows downward), but
+      // gl_FragCoord in the fragment shader is bottom-left-origin (y grows
+      // upward) — without this flip every lens renders mirrored vertically
+      // about the canvas's vertical center.
       const lenses = getSnapshot()
         .map(resolveLens)
         .filter((lens): lens is ResolvedLens => lens !== null)
         .map((lens) => ({
           ...lens,
           x: lens.x * dpr,
-          y: lens.y * dpr,
+          y: canvas!.height - (lens.y + lens.height) * dpr,
           width: lens.width * dpr,
           height: lens.height * dpr,
         }))
@@ -79,7 +83,7 @@ export function GlassLensBackground({
         source = getStaticBackgroundCanvas(bg.type, bg.value, canvas!.width, canvas!.height)
       }
 
-      renderer!.render(lenses, source, canvas!.width, canvas!.height)
+      renderer!.render(lenses, source, canvas!.width, canvas!.height, bg.type === 'animated')
     }
     frameId = requestAnimationFrame(frame)
 

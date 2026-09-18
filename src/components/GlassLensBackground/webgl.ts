@@ -10,7 +10,20 @@ export interface ResolvedLens {
 }
 
 export interface LensRenderer {
-  render(lenses: ResolvedLens[], backgroundSource: TexImageSource, canvasWidth: number, canvasHeight: number): void
+  // forceTextureUpload should be true whenever the background is
+  // 'animated' (its canvas element's *contents* change every frame even
+  // though the element reference stays the same), and can be false for a
+  // static gradient/solid/image background — render() then skips the
+  // texImage2D upload once the same source has already been uploaded,
+  // since re-uploading an unchanged full-resolution RGBA texture to the
+  // GPU 60 times a second was pure waste with no visual benefit.
+  render(
+    lenses: ResolvedLens[],
+    backgroundSource: TexImageSource,
+    canvasWidth: number,
+    canvasHeight: number,
+    forceTextureUpload: boolean
+  ): void
   dispose(): void
 }
 
@@ -87,7 +100,15 @@ export function createLensRenderer(canvas: HTMLCanvasElement): LensRenderer | nu
   gl.enable(gl.BLEND)
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-  function render(lenses: ResolvedLens[], backgroundSource: TexImageSource, width: number, height: number) {
+  let lastUploadedSource: TexImageSource | null = null
+
+  function render(
+    lenses: ResolvedLens[],
+    backgroundSource: TexImageSource,
+    width: number,
+    height: number,
+    forceTextureUpload: boolean
+  ) {
     gl.viewport(0, 0, width, height)
     gl.clearColor(0, 0, 0, 0)
     gl.clear(gl.COLOR_BUFFER_BIT)
@@ -98,7 +119,10 @@ export function createLensRenderer(canvas: HTMLCanvasElement): LensRenderer | nu
 
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, backgroundSource)
+    if (forceTextureUpload || backgroundSource !== lastUploadedSource) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, backgroundSource)
+      lastUploadedSource = backgroundSource
+    }
     gl.uniform1i(uniforms.background, 0)
 
     gl.drawArrays(gl.TRIANGLES, 0, 3)
