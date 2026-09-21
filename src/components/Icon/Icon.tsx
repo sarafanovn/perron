@@ -1,17 +1,20 @@
 const PATHS = {
   close: 'M5 5L15 15M15 5L5 15',
   edit: 'M12.5 3.5L16.5 7.5M2 18L2.8 14.3L13 4.1C13.6 3.5 14.5 3.5 15.1 4.1L15.9 4.9C16.5 5.5 16.5 6.4 15.9 7L5.7 17.2L2 18Z',
-  grid: 'M3 3H9V9H3V3Z M11 3H17V9H11V3Z M3 11H9V17H3V11Z M11 11H17V17H11V11Z',
+  grid: 'M3 3H9V9H3V3ZM11 3H17V9H11V3ZM3 11H9V17H3V11ZM11 11H17V17H11V11Z',
   plus: 'M10 4V16M4 10H16',
+  done: 'M4 10.5L8 14.5L16 5.5',
 } as const
 
-export type IconName = 'close' | 'edit' | 'palette' | 'grid' | 'plus'
+export type IconName = 'close' | 'edit' | 'palette' | 'grid' | 'plus' | 'done'
 
 /**
  * Shared minimal line-icon set (stroke-based, currentColor) replacing the
- * emoji/text glyphs (✕ ✎ 🎨 ▦ ➕) that used to stand in for these actions —
+ * emoji/text glyphs (✕ ✎ 🎨 ▦ ➕ ✓) that used to stand in for these actions —
  * keeps every button's icon the same visual weight and style regardless of
- * font/emoji rendering differences across platforms.
+ * font/emoji rendering differences across platforms. `palette` is the one
+ * exception: it needs filled shapes to read as a paint blob, so it draws
+ * itself from raw primitives instead of the shared stroke shell below.
  */
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
   if (name === 'palette') {
@@ -38,15 +41,14 @@ export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
       </svg>
     )
   }
-  const filled = name === 'grid'
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 20 20"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke={filled ? 'none' : 'currentColor'}
-      strokeWidth={filled ? undefined : 1.6}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden

@@ -1,8 +1,6 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import imageCompression from 'browser-image-compression'
 import { useSettings } from '../../context/SettingsContext'
-import { useGlassLens } from '../../context/GlassLensContext'
-import { Icon } from '../Icon/Icon'
 import { SEARCH_ENGINES } from '../../lib/searchEngines'
 import { BACKGROUND_PRESETS, DEFAULT_ANIMATED_BACKGROUND, parseAnimatedBackground } from '../../lib/backgroundPresets'
 import type { AnimatedBackgroundSettings, SearchEngineId, ThemeMode, ThemeStyle } from '../../lib/types'
@@ -32,15 +30,11 @@ const STYLE_OPTIONS: { id: ThemeStyle; label: string }[] = [
   { id: 'glass', label: 'Glass' },
 ]
 
-export function AppearancePanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function AppearancePanel() {
   const { settings, update, saveError } = useSettings()
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [isCompressing, setIsCompressing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const panelRef = useRef<HTMLDivElement>(null)
-  useGlassLens(panelRef, 'rounded', open)
-
-  if (!open) return null
 
   const { background } = settings.theme
   const isAnimated = background.type === 'animated'
@@ -135,19 +129,15 @@ function setFont(value: string) {
   }
 
   return (
-    <div className="appearance-panel" ref={panelRef}>
-      <button className="close-btn" aria-label="Close appearance settings" onClick={onClose}>
-        <Icon name="close" />
-      </button>
-
+    <div className="appearance-panel">
       <div>
         <h3>Appearance</h3>
-        <div className="mode-toggle" role="group" aria-label="Appearance mode">
+        <div className="segmented-control" role="group" aria-label="Appearance mode">
           {MODE_OPTIONS.map((m) => (
             <button
               key={m.id}
               type="button"
-              className={`mode-toggle-btn${settings.theme.mode === m.id ? ' active' : ''}`}
+              className={settings.theme.mode === m.id ? 'active' : ''}
               aria-pressed={settings.theme.mode === m.id}
               onClick={() => setThemeMode(m.id)}
             >
@@ -155,12 +145,12 @@ function setFont(value: string) {
             </button>
           ))}
         </div>
-        <div className="mode-toggle" role="group" aria-label="Appearance style">
+        <div className="segmented-control" role="group" aria-label="Appearance style">
           {STYLE_OPTIONS.map((s) => (
             <button
               key={s.id}
               type="button"
-              className={`mode-toggle-btn${settings.theme.style === s.id ? ' active' : ''}`}
+              className={settings.theme.style === s.id ? 'active' : ''}
               aria-pressed={settings.theme.style === s.id}
               onClick={() => setThemeStyle(s.id)}
             >

@@ -1,0 +1,102 @@
+.edit-panel-shell {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  /* Also read as a plain number (EDIT_PANEL_WIDTH_PX) by WidgetGrid, which
+     reserves this much viewport width so the grid shrinks to fit beside the
+     panel instead of rendering underneath it. Keep both in sync if changed. */
+  width: 320px;
+  background: var(--color-surface);
+  border-radius: var(--radius-widget) 0 0 var(--radius-widget);
+  box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
+  display: flex;
+  flex-direction: column;
+  z-index: 30;
+  animation: edit-panel-shell-in var(--transition-spring);
+}
+
+.edit-panel-shell-closing {
+  animation: edit-panel-shell-out var(--transition-spring);
+  animation-fill-mode: forwards;
+}
+
+@keyframes edit-panel-shell-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes edit-panel-shell-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edit-panel-shell,
+  .edit-panel-shell-closing {
+    animation: none;
+  }
+}
+
+.edit-panel-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-3) 0;
+}
+
+.edit-panel-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  padding: var(--space-2) var(--space-1);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  justify-content: center;
+  transition: background var(--transition-spring), color var(--transition-spring);
+}
+
+.edit-panel-tab:hover {
+  background: var(--color-hover-overlay);
+}
+
+.edit-panel-tab.active {
+  background: var(--color-bg-surface-solid);
+  color: var(--color-text-primary);
+}
+
+.edit-panel-tabs .close-btn {
+  flex-shrink: 0;
+}
+
+.edit-panel-content {
+  flex: 1;
+  padding: var(--space-6);
+  padding-top: var(--space-5);
+  /* Leaves room so scrolled-to-bottom content doesn't sit under the FAB,
+     which floats above this panel's bottom-right corner (see EditFab.css). */
+  padding-bottom: 84px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}

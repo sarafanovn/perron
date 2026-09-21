@@ -3,33 +3,37 @@ import { SettingsProvider, useSettings } from './context/SettingsContext'
 import { GlassLensProvider } from './context/GlassLensContext'
 import { WidgetGrid } from './components/WidgetGrid/WidgetGrid'
 import { AppearancePanel } from './components/AppearancePanel/AppearancePanel'
-import { GridPanel } from './components/GridPanel/GridPanel'
 import { WidgetPickerPanel } from './components/WidgetPickerPanel/WidgetPickerPanel'
-import { EditFab, type EditFabAction } from './components/EditFab/EditFab'
+import { EditPanelShell, type EditPanelTab } from './components/EditPanelShell/EditPanelShell'
+import { EditFab } from './components/EditFab/EditFab'
 import { AnimatedBackground } from './components/AnimatedBackground/AnimatedBackground'
 import { GlassLensBackground } from './components/GlassLensBackground/GlassLensBackground'
 import { parseAnimatedBackground } from './lib/backgroundPresets'
 import './App.css'
 
 function EditControls() {
-  const { setIsEditMode } = useSettings()
-  const [openPanel, setOpenPanel] = useState<EditFabAction | null>(null)
+  const { isEditMode, setIsEditMode } = useSettings()
+  // The shell's open state IS edit mode now — there's no separate pill to
+  // pick a destination first. Only the tab selection persists independently,
+  // so re-entering edit mode comes back to whichever tab was last viewed.
+  const [activeTab, setActiveTab] = useState<EditPanelTab>('appearance')
 
-  function handleSelect(action: EditFabAction) {
-    setIsEditMode(true)
-    setOpenPanel(action)
-  }
-
-  function closePanel() {
-    setOpenPanel(null)
+  function handleFabToggle() {
+    setIsEditMode(!isEditMode)
   }
 
   return (
     <>
-      <EditFab onSelect={handleSelect} onHover={() => setIsEditMode(true)} />
-      <AppearancePanel open={openPanel === 'appearance'} onClose={closePanel} />
-      <GridPanel open={openPanel === 'grid'} onClose={closePanel} />
-      <WidgetPickerPanel open={openPanel === 'widgets'} onClose={closePanel} />
+      <EditFab editMode={isEditMode} onToggle={handleFabToggle} />
+      <EditPanelShell
+        open={isEditMode}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onClose={() => setIsEditMode(false)}
+      >
+        {activeTab === 'appearance' && <AppearancePanel />}
+        {activeTab === 'widgets' && <WidgetPickerPanel />}
+      </EditPanelShell>
     </>
   )
 }

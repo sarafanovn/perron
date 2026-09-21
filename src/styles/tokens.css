@@ -27,6 +27,17 @@
   --transition-spring: 320ms cubic-bezier(0.32, 0.72, 0, 1);
   --page-background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
 
+  /* Spacing scale shared by the edit surfaces (EditPanelShell tabs, widget
+     style popover, FAB) so gaps/padding stay in step instead of each panel
+     hardcoding its own px value. Steps match the sizes already in use
+     across the app before this scale existed. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
   /* --color-surface is what every widget/panel/FAB actually paints its
      background with; --surface-highlight/-inset-shadow are the glass-only
      inset light/shadow lines. [data-style] below picks which set of values
@@ -167,6 +178,22 @@ select {
   font-size: 9px;
 }
 
+/* Badge tooltips anchor left instead of the default centered/upward bubble
+   — these sit at the widget's top-right corner, where a centered tooltip
+   would overflow past the widget's own edge. */
+.widget-badge[data-tooltip]::after {
+  bottom: auto;
+  top: 50%;
+  left: auto;
+  right: calc(100% + var(--space-2));
+  transform: translateY(-50%) translateX(2px);
+}
+
+.widget-badge[data-tooltip]:hover::after,
+.widget-badge[data-tooltip]:focus-visible::after {
+  transform: translateY(-50%) translateX(0);
+}
+
 /* Shared close-button reset for the floating panels (Appearance, Grid,
    Widget picker, Widget style popover) — each repeated the same
    align-self/cursor/border/background block individually. */
@@ -187,6 +214,79 @@ select {
 .close-btn:hover {
   background: var(--color-hover-overlay);
   color: var(--color-text-primary);
+}
+
+/* Minimal CSS-only tooltip for icon-only controls (FAB pill options, close
+   buttons, widget badges) — no JS/library, just a `data-tooltip` attribute
+   and a delayed-appearance ::after bubble. Delay avoids flashing a label on
+   every incidental mouse pass; :focus-visible covers keyboard use since
+   these controls have no visible text label of their own. */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  left: 50%;
+  transform: translateX(-50%) translateY(2px);
+  padding: var(--space-1) var(--space-2);
+  border-radius: 6px;
+  background: var(--color-badge-bg);
+  color: var(--color-badge-text);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-spring), transform var(--transition-spring);
+  transition-delay: 0s;
+  z-index: 50;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  transition-delay: 400ms;
+}
+
+/* Shared "pick one of N" segmented control — used by AppearancePanel's
+   mode/style toggles and WidgetStylePanel's clock-face/time-format toggles,
+   which were previously two copy-pasted implementations with slightly
+   different padding/font-size. */
+.segmented-control {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: 12px;
+  background: var(--color-input-bg);
+}
+
+.segmented-control + .segmented-control {
+  margin-top: var(--space-2);
+}
+
+.segmented-control button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  padding: var(--space-2) 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-spring), color var(--transition-spring);
+}
+
+.segmented-control button.active {
+  background: var(--color-bg-surface-solid);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-widget);
 }
 
 /* Shared reset for plain text inputs/textareas sitting on a widget or panel

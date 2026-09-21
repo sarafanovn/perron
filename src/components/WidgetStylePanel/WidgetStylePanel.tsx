@@ -1,15 +1,17 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { Icon } from '../Icon/Icon'
 import { useGlassLens } from '../../context/GlassLensContext'
+import { usePresence } from '../../lib/usePresence'
 import type { Clock, Shortcut } from '../../lib/types'
 import './WidgetStylePanel.css'
 
 interface BaseProps {
+  open: boolean
   anchor: { x: number; y: number }
   onClose: () => void
 }
 
-type StyleTarget =
+export type StyleTarget =
   | { kind: 'weather'; dynamicBackground: boolean; onToggleDynamicBackground: (value: boolean) => void }
   | { kind: 'clock'; clock: Clock; onUpdate: (patch: Partial<Omit<Clock, 'id'>>) => void }
   | { kind: 'shortcut'; shortcut: Shortcut; onSave: (details: { label: string; url: string }) => void }
@@ -21,14 +23,22 @@ type StyleTarget =
  * determined by `target.kind` — one shared shell (close button, frosted
  * surface) instead of a separate floating panel component per widget type.
  */
-export function WidgetStylePanel({ anchor, onClose, target }: BaseProps & { target: StyleTarget }) {
+export function WidgetStylePanel({ open, anchor, onClose, target }: BaseProps & { target: StyleTarget }) {
   const panelRef = useRef<HTMLDivElement>(null)
-  useGlassLens(panelRef, 'rounded', true)
+  const { shouldRender, closing, onAnimationEnd } = usePresence(open)
+  useGlassLens(panelRef, 'rounded', shouldRender)
+
+  if (!shouldRender) return null
 
   return (
-    <div className="widget-style-panel" style={{ left: anchor.x, top: anchor.y }} ref={panelRef}>
-      <button className="close-btn" aria-label="Close style editor" onClick={onClose}>
-        <Icon name="close" size={12} />
+    <div
+      className={`widget-style-panel${closing ? ' widget-style-panel-closing' : ''}`}
+      style={{ left: anchor.x, top: anchor.y }}
+      ref={panelRef}
+      onAnimationEnd={onAnimationEnd}
+    >
+      <button className="close-btn" data-tooltip="Close" aria-label="Close style editor" onClick={onClose}>
+        <Icon name="close" size={16} />
       </button>
       {target.kind === 'weather' && <WeatherStyleFields target={target} />}
       {target.kind === 'clock' && <ClockStyleFields target={target} />}
@@ -58,7 +68,7 @@ function ClockStyleFields({ target }: { target: Extract<StyleTarget, { kind: 'cl
   return (
     <div className="widget-style-fields">
       <h4>Clock style</h4>
-      <div className="widget-style-toggle" role="group" aria-label="Clock face">
+      <div className="segmented-control" role="group" aria-label="Clock face">
         <button
           type="button"
           className={clock.style === 'digital' ? 'active' : ''}
@@ -77,7 +87,7 @@ function ClockStyleFields({ target }: { target: Extract<StyleTarget, { kind: 'cl
 
       {clock.style === 'digital' && (
         <>
-          <div className="widget-style-toggle" role="group" aria-label="Time format">
+          <div className="segmented-control" role="group" aria-label="Time format">
             <button
               type="button"
               className={clock.timeFormat === '24h' ? 'active' : ''}

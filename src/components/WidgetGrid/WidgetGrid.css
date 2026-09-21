@@ -2,6 +2,19 @@
   position: relative;
   display: grid;
   padding: var(--grid-padding, 40px);
+  /* Scaled down (not resized via grid-template-columns/rows, which most
+     browsers don't interpolate) to fit beside the edit panel — see
+     usePanelOpenScale in WidgetGrid.tsx. transform-origin keeps the grid's
+     top-left corner anchored so it shrinks toward the space that's actually
+     left over instead of shrinking toward its own center. */
+  transform-origin: top left;
+  transition: transform var(--transition-spring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget-grid {
+    transition: none;
+  }
 }
 
 .widget-grid.dragging-active::before {
@@ -170,6 +183,7 @@
   border-radius: 2px;
   background: var(--color-badge-bg);
   opacity: 0.55;
+  transition: opacity var(--transition-spring);
 }
 
 .resize-handle-s {
