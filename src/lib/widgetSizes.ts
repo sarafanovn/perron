@@ -3,6 +3,8 @@ import { isShortcutWidgetId } from './shortcutWidgets'
 import { isNoteWidgetId } from './noteWidgets'
 import { isTranslatorWidgetId } from './translatorWidgets'
 import { isClockWidgetId } from './clockWidgets'
+import { isSearchWidgetId } from './searchWidgets'
+import { isWeatherWidgetId } from './weatherWidgets'
 
 export interface SizeSpan {
   colSpan: number
@@ -49,8 +51,8 @@ const CLOCK_PRESETS: SizeSpan[] = [
  * has nothing to resize to, so edit mode renders no resize handles for it.
  */
 export function sizePresets(widgetId: WidgetId): SizeSpan[] {
-  if (widgetId === 'search') return SEARCH_PRESETS
-  if (widgetId === 'weather') return WEATHER_PRESETS
+  if (isSearchWidgetId(widgetId)) return SEARCH_PRESETS
+  if (isWeatherWidgetId(widgetId)) return WEATHER_PRESETS
   if (isNoteWidgetId(widgetId)) return NOTE_PRESETS
   if (isTranslatorWidgetId(widgetId)) return TRANSLATOR_PRESETS
   if (isClockWidgetId(widgetId)) return CLOCK_PRESETS

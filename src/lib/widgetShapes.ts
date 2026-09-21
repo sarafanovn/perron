@@ -1,4 +1,5 @@
 import type { WidgetId } from './types'
+import { isSearchWidgetId } from './searchWidgets'
 
 export type WidgetShape = 'squircle' | 'stadium' | 'rounded'
 
@@ -13,7 +14,7 @@ export type WidgetShape = 'squircle' | 'stadium' | 'rounded'
  * tile.
  */
 export function shapeForWidget(widgetId: WidgetId, colSpan: number, rowSpan: number): WidgetShape {
-  if (widgetId === 'search') return 'stadium'
+  if (isSearchWidgetId(widgetId)) return 'stadium'
   if (colSpan === 1 && rowSpan === 1) return 'squircle'
   return 'rounded'
 }

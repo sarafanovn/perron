@@ -5,11 +5,14 @@ import { addShortcutAt, removeShortcut } from '../../lib/shortcutActions'
 import { addNoteAt, removeNote } from '../../lib/noteActions'
 import { addTranslatorAt, removeTranslator } from '../../lib/translatorActions'
 import { addClockAt, removeClock, toggleClockStyle } from '../../lib/clockActions'
-import { addWidgetAt, removeWidget } from '../../lib/widgetActions'
+import { addSearchAt, removeSearch } from '../../lib/searchActions'
+import { addWeatherAt, removeWeather } from '../../lib/weatherActions'
 import { isShortcutWidgetId, shortcutIdFromWidgetId } from '../../lib/shortcutWidgets'
 import { isNoteWidgetId, noteIdFromWidgetId } from '../../lib/noteWidgets'
 import { isTranslatorWidgetId, translatorIdFromWidgetId } from '../../lib/translatorWidgets'
 import { isClockWidgetId, clockIdFromWidgetId } from '../../lib/clockWidgets'
+import { isSearchWidgetId } from '../../lib/searchWidgets'
+import { isWeatherWidgetId } from '../../lib/weatherWidgets'
 import { shapeForWidget } from '../../lib/widgetShapes'
 import { sizePresets, closestPreset } from '../../lib/widgetSizes'
 import type { ClockStyle, Translator, WidgetId } from '../../lib/types'
@@ -212,10 +215,8 @@ export function WidgetGrid() {
 
     const newWidgetPayload = e.dataTransfer?.getData(NEW_WIDGET_DRAG_TYPE)
     if (newWidgetPayload) {
-      const { widgetId, colSpan, rowSpan, clockStyle } = JSON.parse(newWidgetPayload) as {
+      const { widgetId, clockStyle } = JSON.parse(newWidgetPayload) as {
         widgetId: 'search' | 'weather' | 'shortcut' | 'note' | 'translator' | 'clock'
-        colSpan: number
-        rowSpan: number
         clockStyle?: ClockStyle
       }
       const point = cellAtPoint(e.clientX, e.clientY)
@@ -230,7 +231,8 @@ export function WidgetGrid() {
         if (widgetId === 'note') return addNoteAt(current, target.col, target.row)
         if (widgetId === 'translator') return addTranslatorAt(current, target.col, target.row)
         if (widgetId === 'clock') return addClockAt(current, clockStyle ?? 'digital', target.col, target.row)
-        return addWidgetAt(current, widgetId, target.col, target.row, colSpan, rowSpan)
+        if (widgetId === 'search') return addSearchAt(current, target.col, target.row)
+        return addWeatherAt(current, target.col, target.row)
       })
       return
     }
@@ -298,8 +300,12 @@ export function WidgetGrid() {
     update((current) => ({ ...current, weather: { ...current.weather, dynamicBackground } }))
   }
 
-  function handleRemoveWidget(widgetId: WidgetId) {
-    update((current) => removeWidget(current, widgetId))
+  function handleRemoveSearch(widgetId: WidgetId) {
+    update((current) => removeSearch(current, widgetId))
+  }
+
+  function handleRemoveWeather(widgetId: WidgetId) {
+    update((current) => removeWeather(current, widgetId))
   }
 
   // Single remove entry point for the badge rendered in the grid loop below
@@ -311,7 +317,8 @@ export function WidgetGrid() {
     if (isNoteWidgetId(widgetId)) return handleRemoveNote(noteIdFromWidgetId(widgetId))
     if (isTranslatorWidgetId(widgetId)) return handleRemoveTranslator(translatorIdFromWidgetId(widgetId))
     if (isClockWidgetId(widgetId)) return handleRemoveClock(clockIdFromWidgetId(widgetId))
-    handleRemoveWidget(widgetId)
+    if (isWeatherWidgetId(widgetId)) return handleRemoveWeather(widgetId)
+    handleRemoveSearch(widgetId)
   }
 
   // Which widget types get the second (style-editor) badge — Weather,
@@ -319,7 +326,7 @@ export function WidgetGrid() {
   // settings today (see styleEditorTarget below); Search/Note/Translator
   // have nothing to configure there.
   function hasStyleEditor(widgetId: WidgetId): boolean {
-    return widgetId === 'weather' || isClockWidgetId(widgetId) || isShortcutWidgetId(widgetId)
+    return isWeatherWidgetId(widgetId) || isClockWidgetId(widgetId) || isShortcutWidgetId(widgetId)
   }
 
   // Human-readable name for badge aria-labels — a shortcut uses its own
@@ -330,8 +337,8 @@ export function WidgetGrid() {
       const shortcut = settings.shortcuts.find((s) => s.id === shortcutIdFromWidgetId(widgetId))
       if (shortcut?.label) return shortcut.label
     }
-    if (widgetId === 'search') return 'search'
-    if (widgetId === 'weather') return 'weather'
+    if (isSearchWidgetId(widgetId)) return 'search'
+    if (isWeatherWidgetId(widgetId)) return 'weather'
     if (isNoteWidgetId(widgetId)) return 'note'
     if (isTranslatorWidgetId(widgetId)) return 'translator'
     if (isClockWidgetId(widgetId)) return 'clock'
@@ -408,7 +415,7 @@ export function WidgetGrid() {
   }, [resizeState !== null, cellSize, columns, rows])
 
   function styleEditorTarget(widgetId: WidgetId): Parameters<typeof WidgetStylePanel>[0]['target'] | null {
-    if (widgetId === 'weather') {
+    if (isWeatherWidgetId(widgetId)) {
       return {
         kind: 'weather',
         dynamicBackground: settings.weather.dynamicBackground,
@@ -439,8 +446,8 @@ export function WidgetGrid() {
   }
 
   function renderWidget(widgetId: WidgetId, colSpan: number, rowSpan: number) {
-    if (widgetId === 'search') return <SearchWidget />
-    if (widgetId === 'weather') {
+    if (isSearchWidgetId(widgetId)) return <SearchWidget />
+    if (isWeatherWidgetId(widgetId)) {
       return (
         <WeatherWidget
           colSpan={colSpan}
