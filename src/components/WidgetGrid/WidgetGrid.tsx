@@ -21,39 +21,78 @@ import { NoteWidget } from '../NoteWidget/NoteWidget'
 import { TranslatorWidget } from '../TranslatorWidget/TranslatorWidget'
 import { ClockWidget } from '../ClockWidget/ClockWidget'
 import { Squircle } from '../Squircle/Squircle'
-import { WidgetStylePanel } from '../WidgetStylePanel/WidgetStylePanel'
+import { WidgetStylePanel, type StyleTarget } from '../WidgetStylePanel/WidgetStylePanel'
 import { NEW_WIDGET_DRAG_TYPE } from '../WidgetPickerPanel/WidgetPickerPanel'
 import { Icon } from '../Icon/Icon'
 import './WidgetGrid.css'
 
 const GRID_GAP_PX = 20
 const GRID_PADDING_PX = 40
-export const MIN_CELL_SIZE_PX = 60
-export const MAX_CELL_SIZE_PX = 200
+// Matches .edit-panel-shell's width in EditPanelShell.css — see the comment
+// there if this ever needs to change.
+const EDIT_PANEL_WIDTH_PX = 320
+// The grid's cell size is fixed at this physical pixel size — columns/rows
+// are derived from it and the viewport instead of the other way around, so
+// a widget always occupies the same on-screen size regardless of display.
+export const FIXED_CELL_SIZE_PX = 60
+// The largest span among the widget-size presets (Weather's 4x4, see
+// widgetSizes.ts) — columns/rows can never be computed below this, or
+// reconcileLayout (which only repositions widgets, never shrinks their
+// span) would have nowhere left to put a widget that size.
+const MIN_GRID_CELLS = 4
 
-function useCellSizePx(columns: number, rows: number): number {
-  const [cellSize, setCellSize] = useState(120)
+function useAutoGridSize(): { columns: number; rows: number } {
+  const [size, setSize] = useState({ columns: 12, rows: 8 })
 
   useEffect(() => {
     function recalculate() {
-      const availableWidth = window.innerWidth - GRID_PADDING_PX * 2 - GRID_GAP_PX * (columns - 1)
-      const availableHeight = window.innerHeight - GRID_PADDING_PX * 2 - GRID_GAP_PX * (rows - 1)
-      const size = Math.min(availableWidth / columns, availableHeight / rows)
-      // Round to a whole pixel: the grid overlay's repeating-gradient period
-      // and the actual grid-template-columns/rows track size are computed
-      // from this same value independently. A fractional cellSize (e.g.
-      // 141.6667px) gets rounded slightly differently by each — the browser
-      // snaps rendered grid tracks to device pixels, while the gradient
-      // pattern uses the raw float — and that sub-pixel gap compounds across
-      // columns/rows until widgets visibly drift away from the grid lines.
-      setCellSize(Math.round(Math.min(Math.max(size, MIN_CELL_SIZE_PX), MAX_CELL_SIZE_PX)))
+      const step = FIXED_CELL_SIZE_PX + GRID_GAP_PX
+      const availableWidth = window.innerWidth - GRID_PADDING_PX * 2 + GRID_GAP_PX
+      const availableHeight = window.innerHeight - GRID_PADDING_PX * 2 + GRID_GAP_PX
+      const columns = Math.max(MIN_GRID_CELLS, Math.floor(availableWidth / step))
+      const rows = Math.max(MIN_GRID_CELLS, Math.floor(availableHeight / step))
+      setSize((current) => (current.columns === columns && current.rows === rows ? current : { columns, rows }))
     }
     recalculate()
     window.addEventListener('resize', recalculate)
     return () => window.removeEventListener('resize', recalculate)
-  }, [columns, rows])
+  }, [])
 
-  return cellSize
+  return size
+}
+
+// While the edit panel is open, the grid is visually scaled down and
+// shifted left (via a CSS transform) to fit beside it instead of running
+// underneath it — transform animates smoothly everywhere, unlike
+// grid-template-columns track sizes, which don't interpolate in most
+// browsers. cellSize/layout itself stays computed against the full
+// viewport; only the rendered presentation shrinks and shifts.
+//
+// .app-root centers .widget-grid across the *full* window width regardless
+// of the panel, so its untransformed left edge sits at
+// (innerWidth - gridWidthPx) / 2. transform-origin: top left keeps that
+// edge fixed under scale, so translateX moves it the rest of the way to 0
+// — the left edge of the space actually available beside the panel.
+function usePanelOpenTransform(gridWidthPx: number, panelOpen: boolean): { scale: number; translateX: number } {
+  const [transform, setTransform] = useState({ scale: 1, translateX: 0 })
+
+  useEffect(() => {
+    function recalculate() {
+      if (!panelOpen || gridWidthPx === 0) {
+        setTransform({ scale: 1, translateX: 0 })
+        return
+      }
+      const availableWidth = window.innerWidth - EDIT_PANEL_WIDTH_PX
+      const scale = Math.min(1, availableWidth / gridWidthPx)
+      const untransformedLeft = (window.innerWidth - gridWidthPx) / 2
+      setTransform({ scale, translateX: -untransformedLeft })
+    }
+    recalculate()
+    window.addEventListener('resize', recalculate)
+    return () => window.removeEventListener('resize', recalculate)
+  }, [gridWidthPx, panelOpen])
+
+  return transform
 }
 
 interface ResizeState {
@@ -67,14 +106,37 @@ interface ResizeState {
 }
 
 export function WidgetGrid() {
-  const { settings, update, isAdjustingGrid, isEditMode, setIsEditMode } = useSettings()
+  const { settings, update, isEditMode, setIsEditMode } = useSettings()
   const [draggingId, setDraggingId] = useState<WidgetId | null>(null)
   const [resizeState, setResizeState] = useState<ResizeState | null>(null)
   const [styleEditorWidgetId, setStyleEditorWidgetId] = useState<WidgetId | null>(null)
   const [styleEditorAnchor, setStyleEditorAnchor] = useState<{ x: number; y: number } | null>(null)
+  // Frozen so WidgetStylePanel has a target/anchor to render during its
+  // closing animation, even if the underlying widget is removed (which
+  // would otherwise make styleEditorTarget() go null instantly) or once
+  // styleEditorWidgetId itself is cleared by closeStyleEditor.
+  const lastStyleTargetRef = useRef<{ target: StyleTarget; anchor: { x: number; y: number } } | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
-  const { columns, rows } = settings.grid
-  const cellSize = useCellSizePx(columns, rows)
+  const { columns, rows } = useAutoGridSize()
+  const cellSize = FIXED_CELL_SIZE_PX
+  const gridWidthPx = columns * cellSize + GRID_GAP_PX * (columns - 1) + GRID_PADDING_PX * 2
+  const { scale: panelScale, translateX: panelTranslateX } = usePanelOpenTransform(gridWidthPx, isEditMode)
+
+  // settings.grid is a derived cache of the viewport-computed columns/rows
+  // (not user-editable anymore — see useAutoGridSize) kept in Settings only
+  // because addXAt()/findFirstFreeCell() and the storage-migration path
+  // read it as plain data outside of React. Keep it in sync whenever the
+  // computed size changes. `update` itself isn't in the dependency array —
+  // it's a new function identity on every SettingsProvider render, and
+  // including it would re-run this effect (and call setSettings) on every
+  // render regardless of whether columns/rows actually changed.
+  useEffect(() => {
+    update((current) => {
+      if (current.grid.columns === columns && current.grid.rows === rows) return current
+      return { ...current, grid: { columns, rows } }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columns, rows])
 
   function openStyleEditor(e: ReactMouseEvent, widgetId: WidgetId) {
     e.preventDefault()
@@ -130,9 +192,18 @@ export function WidgetGrid() {
   function cellAtPoint(clientX: number, clientY: number): { col: number; row: number } | null {
     if (!gridRef.current) return null
     const rect = gridRef.current.getBoundingClientRect()
+    // rect is the grid's post-transform (visual) box, but cellSize/gap are
+    // the pre-transform CSS pixel values baked into gridTemplateColumns —
+    // while the edit panel's scale-down is active, a screen pixel covers
+    // more grid pixels than 1:1, so the click offset needs to be scaled
+    // back up before dividing by cellSize, or every cell past the first
+    // would resolve to the wrong column/row.
+    const visualScale = rect.width / gridWidthPx
+    const localX = (clientX - rect.left) / visualScale
+    const localY = (clientY - rect.top) / visualScale
     return {
-      col: Math.floor((clientX - rect.left - GRID_PADDING_PX) / (cellSize + GRID_GAP_PX)),
-      row: Math.floor((clientY - rect.top - GRID_PADDING_PX) / (cellSize + GRID_GAP_PX)),
+      col: Math.floor((localX - GRID_PADDING_PX) / (cellSize + GRID_GAP_PX)),
+      row: Math.floor((localY - GRID_PADDING_PX) / (cellSize + GRID_GAP_PX)),
     }
   }
 
@@ -293,8 +364,14 @@ export function WidgetGrid() {
     function handleMove(e: globalThis.MouseEvent) {
       setResizeState((current) => {
         if (!current) return current
-        const deltaCol = Math.round((e.clientX - current.startX) / step)
-        const deltaRow = Math.round((e.clientY - current.startY) / step)
+        // startX/startY were recorded in screen pixels; while the edit
+        // panel's scale-down is active (see usePanelOpenTransform), the
+        // grid's own CSS pixels (cellSize/step) are larger than screen
+        // pixels by 1/panelScale, so the raw mouse delta needs scaling back
+        // up first or a drag would resize far fewer cells than it visually
+        // crossed.
+        const deltaCol = Math.round((e.clientX - current.startX) / panelScale / step)
+        const deltaRow = Math.round((e.clientY - current.startY) / panelScale / step)
         const trialColSpan = Math.max(1, Math.min(columns, current.startColSpan + deltaCol))
         const trialRowSpan = Math.max(1, Math.min(rows, current.startRowSpan + deltaRow))
         if (trialColSpan === current.trialColSpan && trialRowSpan === current.trialRowSpan) return current
@@ -414,17 +491,21 @@ export function WidgetGrid() {
     return null
   }
 
-  const activeStyleTarget = styleEditorWidgetId ? styleEditorTarget(styleEditorWidgetId) : null
+  const isStyleEditorOpen = styleEditorWidgetId !== null
+  const resolvedStyleTarget = styleEditorWidgetId ? styleEditorTarget(styleEditorWidgetId) : null
+  if (resolvedStyleTarget) lastStyleTargetRef.current = { target: resolvedStyleTarget, anchor: styleEditorAnchor! }
+  const frozenStyleTarget = lastStyleTargetRef.current
 
   return (
     <>
       <div
         ref={gridRef}
-        className={`widget-grid${draggingId || isAdjustingGrid || isEditMode ? ' dragging-active' : ''}${isEditMode ? ' edit-mode' : ''}`}
+        className={`widget-grid${draggingId || isEditMode ? ' dragging-active' : ''}${isEditMode ? ' edit-mode' : ''}`}
         style={{
           gridTemplateColumns: `repeat(${columns}, ${cellSize}px)`,
           gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
           gap: `${GRID_GAP_PX}px`,
+          transform: panelScale < 1 ? `translateX(${panelTranslateX}px) scale(${panelScale})` : undefined,
           ['--cell-size' as string]: `${cellSize}px`,
           ['--grid-gap' as string]: `${GRID_GAP_PX}px`,
           ['--grid-padding' as string]: `${GRID_PADDING_PX}px`,
@@ -491,6 +572,7 @@ export function WidgetGrid() {
               <>
                 <span
                   className="widget-badge widget-badge-remove"
+                  data-tooltip={`Remove ${widgetDisplayName(entry.widgetId)}`}
                   aria-label={`Remove ${widgetDisplayName(entry.widgetId)}`}
                   onClick={(e) => {
                     e.preventDefault()
@@ -503,6 +585,7 @@ export function WidgetGrid() {
                 {hasStyleEditor(entry.widgetId) && (
                   <span
                     className="widget-badge widget-badge-style"
+                    data-tooltip="Edit style"
                     aria-label={`Edit ${widgetDisplayName(entry.widgetId)} style`}
                     onClick={(e) => openStyleEditor(e, entry.widgetId)}
                   >
@@ -537,8 +620,13 @@ export function WidgetGrid() {
         )
       })}
     </div>
-    {activeStyleTarget && (
-      <WidgetStylePanel anchor={styleEditorAnchor!} onClose={closeStyleEditor} target={activeStyleTarget} />
+    {frozenStyleTarget && (
+      <WidgetStylePanel
+        open={isStyleEditorOpen}
+        anchor={frozenStyleTarget.anchor}
+        onClose={closeStyleEditor}
+        target={frozenStyleTarget.target}
+      />
     )}
     </>
   )
