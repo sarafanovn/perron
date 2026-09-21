@@ -1,39 +1,14 @@
 .widget-picker-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 280px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-widget), var(--surface-highlight), var(--surface-inset-shadow);
-  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  z-index: 30;
-  animation: widget-picker-in var(--transition-spring);
+  gap: var(--space-4);
 }
 
-@keyframes widget-picker-in {
-  from {
-    opacity: 0;
-    transform: translateX(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.widget-picker-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.widget-picker-header h3 {
+.widget-picker-panel h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
 }
 
 .widget-picker-hint {
@@ -46,7 +21,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 .widget-picker-card {

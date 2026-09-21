@@ -1,8 +1,5 @@
-import { useRef, type DragEvent } from 'react'
-import { useSettings } from '../../context/SettingsContext'
-import { useGlassLens } from '../../context/GlassLensContext'
+import { type DragEvent } from 'react'
 import { WidgetPreview, type PreviewWidgetId } from '../WidgetPreview/WidgetPreview'
-import { Icon } from '../Icon/Icon'
 import type { ClockStyle } from '../../lib/types'
 import './WidgetPickerPanel.css'
 
@@ -58,16 +55,8 @@ const PICKER_ENTRIES: PickerEntry[] = [
   },
 ]
 
-export function WidgetPickerPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { settings } = useSettings()
-  const panelRef = useRef<HTMLDivElement>(null)
-  useGlassLens(panelRef, 'rounded', open)
-
-  if (!open) return null
-
-  const placedIds = new Set(settings.widgetLayout.map((w) => w.widgetId))
-  const available = PICKER_ENTRIES.filter((entry) => !entry.singleton || !placedIds.has(entry.widgetId))
-  const hiddenSingletons = PICKER_ENTRIES.filter((entry) => entry.singleton && placedIds.has(entry.widgetId))
+export function WidgetPickerPanel() {
+  const placedIds = new Set<PreviewWidgetId>()
 
   function handleDragStart(e: DragEvent, entry: PickerEntry) {
     e.dataTransfer.effectAllowed = 'copy'
@@ -82,14 +71,12 @@ export function WidgetPickerPanel({ open, onClose }: { open: boolean; onClose: (
     )
   }
 
+  const available = PICKER_ENTRIES.filter((entry) => !entry.singleton || !placedIds.has(entry.widgetId))
+  const hiddenSingletons = PICKER_ENTRIES.filter((entry) => entry.singleton && placedIds.has(entry.widgetId))
+
   return (
-    <div className="widget-picker-panel" ref={panelRef}>
-      <div className="widget-picker-header">
-        <h3>Add widget</h3>
-        <button className="close-btn" aria-label="Close widget picker" onClick={onClose}>
-          <Icon name="close" />
-        </button>
-      </div>
+    <div className="widget-picker-panel">
+      <h3>Add widget</h3>
       <p className="widget-picker-hint">Drag a widget onto the grid to place it.</p>
       <div className="widget-picker-list">
         {available.map((entry) => (
