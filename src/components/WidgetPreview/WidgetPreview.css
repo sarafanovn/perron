@@ -21,6 +21,16 @@
   white-space: nowrap;
 }
 
+.widget-preview-fake-engine-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  opacity: 0.5;
+}
+
 .widget-preview-fake-text {
   color: var(--color-text-secondary);
   overflow: hidden;

@@ -54,7 +54,7 @@ function previewContent(widgetId: PreviewWidgetId, clockStyle?: ClockStyle) {
     case 'search':
       return (
         <div className="search-widget" aria-hidden>
-          <span className="widget-preview-fake-select">Google</span>
+          <span className="widget-preview-fake-engine-icon" />
           <span className="widget-preview-fake-text">Search the web</span>
         </div>
       )

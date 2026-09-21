@@ -25,7 +25,13 @@ const WEATHER_PRESETS: SizeSpan[] = [
   { colSpan: 4, rowSpan: 4 },
 ]
 
-const SEARCH_PRESETS: SizeSpan[] = [{ colSpan: 4, rowSpan: 1 }]
+// Three widths at a fixed one-row height — a search bar only ever needs
+// more horizontal room (for a longer visible query), never more height.
+const SEARCH_PRESETS: SizeSpan[] = [
+  { colSpan: 2, rowSpan: 1 },
+  { colSpan: 4, rowSpan: 1 },
+  { colSpan: 6, rowSpan: 1 },
+]
 
 const NOTE_PRESETS: SizeSpan[] = [
   { colSpan: 1, rowSpan: 1 },
@@ -47,8 +53,8 @@ const CLOCK_PRESETS: SizeSpan[] = [
 ]
 
 /**
- * Ordered smallest to largest. A widget with exactly one preset (search)
- * has nothing to resize to, so edit mode renders no resize handles for it.
+ * Ordered smallest to largest. A widget with exactly one preset has nothing
+ * to resize to, so edit mode renders no resize handles for it.
  */
 export function sizePresets(widgetId: WidgetId): SizeSpan[] {
   if (isSearchWidgetId(widgetId)) return SEARCH_PRESETS
