@@ -163,11 +163,15 @@
 /* Each handle's hit-area is larger than its visible mark (::after) so it's
    easy to grab, but only the small mark is shown — a visual affordance
    that this edge is draggable, without covering the widget's own content
-   the way a full-width highlighted border would. */
+   the way a full-width highlighted border would. top is pushed below the
+   remove/style badges (see .widget-badge in tokens.css — up to 44px tall
+   when both are stacked) rather than centered, so a short single-row
+   widget like Search (only 60px tall with a colSpan-only resize) doesn't
+   have its badge and resize hit-area overlap in the top-right corner. */
 .resize-handle-e {
-  top: 12px;
+  top: 44px;
   right: -6px;
-  bottom: 12px;
+  bottom: 4px;
   width: 12px;
   cursor: ew-resize;
 }

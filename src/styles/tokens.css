@@ -178,6 +178,15 @@ select {
   font-size: 9px;
 }
 
+/* Overrides the generic [data-tooltip] { position: relative } below (see
+   its comment) — same specificity as .widget-badge's own position:
+   absolute, but declared later in this file, so without this the badge's
+   tooltip anchor would silently win and drop it out of its absolute
+   top-right placement into normal document flow. */
+.widget-badge[data-tooltip] {
+  position: absolute;
+}
+
 /* Badge tooltips anchor left instead of the default centered/upward bubble
    — these sit at the widget's top-right corner, where a centered tooltip
    would overflow past the widget's own edge. */
