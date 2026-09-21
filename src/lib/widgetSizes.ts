@@ -25,12 +25,14 @@ const WEATHER_PRESETS: SizeSpan[] = [
   { colSpan: 4, rowSpan: 4 },
 ]
 
-// Three widths at a fixed one-row height — a search bar only ever needs
-// more horizontal room (for a longer visible query), never more height.
+// Widths at a fixed one-row height — a search bar only ever needs more
+// horizontal room (for a longer visible query), never more height.
 const SEARCH_PRESETS: SizeSpan[] = [
   { colSpan: 2, rowSpan: 1 },
   { colSpan: 4, rowSpan: 1 },
   { colSpan: 6, rowSpan: 1 },
+  { colSpan: 8, rowSpan: 1 },
+  { colSpan: 10, rowSpan: 1 },
 ]
 
 const NOTE_PRESETS: SizeSpan[] = [

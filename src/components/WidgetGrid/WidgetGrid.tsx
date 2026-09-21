@@ -38,11 +38,13 @@ const EDIT_PANEL_WIDTH_PX = 320
 // are derived from it and the viewport instead of the other way around, so
 // a widget always occupies the same on-screen size regardless of display.
 export const FIXED_CELL_SIZE_PX = 60
-// The largest span among the widget-size presets (Weather's 4x4, see
-// widgetSizes.ts) — columns/rows can never be computed below this, or
-// reconcileLayout (which only repositions widgets, never shrinks their
-// span) would have nowhere left to put a widget that size.
-const MIN_GRID_CELLS = 4
+// The largest colSpan/rowSpan among the widget-size presets (Search's
+// 10-wide, Weather's 4-tall, see widgetSizes.ts) — columns/rows can never
+// be computed below these, or reconcileLayout (which only repositions
+// widgets, never shrinks their span) would have nowhere left to put a
+// widget that size.
+const MIN_GRID_COLUMNS = 10
+const MIN_GRID_ROWS = 4
 
 function useAutoGridSize(): { columns: number; rows: number } {
   const [size, setSize] = useState({ columns: 12, rows: 8 })
@@ -52,8 +54,8 @@ function useAutoGridSize(): { columns: number; rows: number } {
       const step = FIXED_CELL_SIZE_PX + GRID_GAP_PX
       const availableWidth = window.innerWidth - GRID_PADDING_PX * 2 + GRID_GAP_PX
       const availableHeight = window.innerHeight - GRID_PADDING_PX * 2 + GRID_GAP_PX
-      const columns = Math.max(MIN_GRID_CELLS, Math.floor(availableWidth / step))
-      const rows = Math.max(MIN_GRID_CELLS, Math.floor(availableHeight / step))
+      const columns = Math.max(MIN_GRID_COLUMNS, Math.floor(availableWidth / step))
+      const rows = Math.max(MIN_GRID_ROWS, Math.floor(availableHeight / step))
       setSize((current) => (current.columns === columns && current.rows === rows ? current : { columns, rows }))
     }
     recalculate()
