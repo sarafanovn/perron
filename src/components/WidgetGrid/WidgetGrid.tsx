@@ -27,7 +27,11 @@ import { Squircle } from '../Squircle/Squircle'
 import { WidgetStylePanel, type StyleTarget } from '../WidgetStylePanel/WidgetStylePanel'
 import { NEW_WIDGET_DRAG_TYPE } from '../WidgetPickerPanel/WidgetPickerPanel'
 import { Icon } from '../Icon/Icon'
+import { UndoToast } from '../UndoToast/UndoToast'
+import type { Settings } from '../../lib/types'
 import './WidgetGrid.css'
+
+const UNDO_TIMEOUT_MS = 5000
 
 const GRID_GAP_PX = 20
 const GRID_PADDING_PX = 40
@@ -121,6 +125,12 @@ export function WidgetGrid() {
   // would otherwise make styleEditorTarget() go null instantly) or once
   // styleEditorWidgetId itself is cleared by closeStyleEditor.
   const lastStyleTargetRef = useRef<{ target: StyleTarget; anchor: { x: number; y: number } } | null>(null)
+  // Snapshot of settings taken right before a widget removal, kept just long
+  // enough to offer an Undo toast — removal deletes the widget's own content
+  // too (a note's text, a shortcut's label/url), so this is the only
+  // recovery path for that data short of the browser's own undo history.
+  const [undoSnapshot, setUndoSnapshot] = useState<{ settings: Settings; label: string } | null>(null)
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const { columns, rows } = useAutoGridSize()
   const cellSize = FIXED_CELL_SIZE_PX
@@ -314,7 +324,12 @@ export function WidgetGrid() {
   // — routes to whichever collection actually owns this widget instead of
   // each widget type's content component reaching for its own onRemove
   // prop (which would put the remove badge inside the jiggling shape).
+  // Snapshots settings first so removal can be undone — see undoSnapshot.
   function removeAnyWidget(widgetId: WidgetId) {
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
+    setUndoSnapshot({ settings, label: widgetDisplayName(widgetId) })
+    undoTimeoutRef.current = setTimeout(() => setUndoSnapshot(null), UNDO_TIMEOUT_MS)
+
     if (isShortcutWidgetId(widgetId)) return handleRemoveShortcut(shortcutIdFromWidgetId(widgetId))
     if (isNoteWidgetId(widgetId)) return handleRemoveNote(noteIdFromWidgetId(widgetId))
     if (isTranslatorWidgetId(widgetId)) return handleRemoveTranslator(translatorIdFromWidgetId(widgetId))
@@ -322,6 +337,20 @@ export function WidgetGrid() {
     if (isWeatherWidgetId(widgetId)) return handleRemoveWeather(widgetId)
     handleRemoveSearch(widgetId)
   }
+
+  function handleUndoRemove() {
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
+    if (!undoSnapshot) return
+    const restored = undoSnapshot.settings
+    update(() => restored)
+    setUndoSnapshot(null)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
+    }
+  }, [])
 
   // Which widget types get the second (style-editor) badge — Weather,
   // Clock, and Shortcut are the only ones with per-instance appearance
@@ -636,6 +665,9 @@ export function WidgetGrid() {
         onClose={closeStyleEditor}
         target={frozenStyleTarget.target}
       />
+    )}
+    {undoSnapshot && (
+      <UndoToast message={`Removed ${undoSnapshot.label}`} onUndo={handleUndoRemove} />
     )}
     </>
   )

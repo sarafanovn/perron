@@ -95,6 +95,17 @@
   box-sizing: border-box;
 }
 
+/* Generic keyboard-focus ring for every interactive element — previously
+   the only :focus-visible rules in the app were for tooltip reveal, so
+   keyboard-focused controls (buttons, tabs, badges, picker cards) had no
+   visible indicator beyond whatever the browser's UA default supplied (a
+   WCAG 2.4.7 risk). outline (not box-shadow) so it isn't clipped by any
+   ancestor's overflow:hidden — Squircle-shaped widgets included. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 body {
   margin: 0;
   font-family: var(--font-family-base);

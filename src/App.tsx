@@ -9,6 +9,7 @@ import { EditFab } from './components/EditFab/EditFab'
 import { AnimatedBackground } from './components/AnimatedBackground/AnimatedBackground'
 import { GlassLensBackground } from './components/GlassLensBackground/GlassLensBackground'
 import { parseAnimatedBackground } from './lib/backgroundPresets'
+import { SaveErrorToast } from './components/SaveErrorToast/SaveErrorToast'
 import './App.css'
 
 function EditControls() {
@@ -61,6 +62,7 @@ export default function App() {
           <AppBackgroundLayers />
           <WidgetGrid />
           <EditControls />
+          <SaveErrorToast />
         </div>
       </GlassLensProvider>
     </SettingsProvider>

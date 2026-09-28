@@ -47,11 +47,43 @@
 }
 
 .translator-result {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 8px;
   font-size: 13px;
   color: var(--color-text-primary);
+}
+
+/* Dims the stale translation while a new one is in flight, so it's visible
+   that a request is running rather than the result silently going stale
+   with no indicator (the previous behavior). */
+.translator-result-loading {
+  color: var(--color-text-secondary);
+}
+
+.translator-spinner {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--color-hover-overlay);
+  border-top-color: var(--color-text-secondary);
+  animation: translator-spin 0.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .translator-spinner {
+    animation: none;
+  }
+}
+
+@keyframes translator-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 

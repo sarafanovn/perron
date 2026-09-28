@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { fetchWeatherByCoords, geocodeCity } from '../../lib/weatherApi'
+import { fetchWeatherByCoords, geocodeCity, WeatherRequestError } from '../../lib/weatherApi'
 import { readWeatherCache, writeWeatherCache, isWeatherCacheFresh, type WeatherData } from '../../lib/weatherCache'
 import { dayPhaseAt, weatherBackground, weatherIcon, type DayPhase } from '../../lib/weatherBackground'
 import './WeatherWidget.css'
@@ -63,6 +63,11 @@ export function WeatherWidget({
   const [locationLabel, setLocationLabel] = useState('')
   const [cityQuery, setCityQuery] = useState('')
   const [cityResults, setCityResults] = useState<Array<{ label: string; lat: number; lon: number }>>([])
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  // Set only when geolocation itself failed (denied/unavailable), not when a
+  // city search afterwards fails — distinguishes "we didn't get your
+  // location" from "we don't have a location yet" in the needs-city state.
+  const [locationDenied, setLocationDenied] = useState(false)
 
   const today = weather?.daily[0]
   const phase = useDayPhase(today?.sunrise, today?.sunset)
@@ -83,19 +88,26 @@ export function WeatherWidget({
       setWeather(withLabel)
       setLocationLabel(label)
       setStatus('ready')
-    } catch {
+    } catch (err) {
+      setErrorMessage(err instanceof WeatherRequestError ? err.message : "Couldn't load weather.")
       setStatus('error')
     }
   }
 
   useEffect(() => {
     if (!navigator.geolocation) {
+      setLocationDenied(false)
       setStatus('needs-city')
       return
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => loadForCoords(pos.coords.latitude, pos.coords.longitude, ''),
-      () => setStatus('needs-city')
+      (geoErr) => {
+        // code 1 = PERMISSION_DENIED; anything else (unavailable/timeout) is
+        // not a user refusal, so don't tell them access was denied.
+        setLocationDenied(geoErr.code === 1)
+        setStatus('needs-city')
+      }
     )
   }, [])
 
@@ -105,7 +117,8 @@ export function WeatherWidget({
     try {
       const results = await geocodeCity(cityQuery.trim())
       setCityResults(results)
-    } catch {
+    } catch (err) {
+      setErrorMessage(err instanceof WeatherRequestError ? err.message : "Couldn't search for that city.")
       setStatus('error')
     }
   }
@@ -117,7 +130,7 @@ export function WeatherWidget({
   if (status === 'error') {
     return (
       <div className="weather-widget weather-widget-plain">
-        <span>Couldn't load weather.</span>
+        <span>{errorMessage ?? "Couldn't load weather."}</span>
         <button onClick={() => setStatus('needs-city')}>Try again</button>
       </div>
     )
@@ -126,6 +139,11 @@ export function WeatherWidget({
   if (status === 'needs-city') {
     return (
       <div className="weather-widget weather-widget-plain">
+        {locationDenied && (
+          <span className="weather-location-denied">
+            Location access was denied. Search for a city instead.
+          </span>
+        )}
         <form onSubmit={handleCitySubmit}>
           <input
             placeholder="Search city"

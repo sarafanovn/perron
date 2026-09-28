@@ -26,12 +26,34 @@ export const TRANSLATE_LANGUAGES: TranslateLanguage[] = [
   { code: 'fi', label: 'Finnish', short: 'FIN' },
 ]
 
+// Actionable, cause-specific messages — MyMemory's free anonymous tier (see
+// the module comment above) rate-limits fairly aggressively, so a 429 here
+// is a routine occurrence, not an edge case, and deserves its own message.
+export class TranslateRequestError extends Error {}
+
 export async function translateText(text: string, sourceLang: string, targetLang: string): Promise<string> {
   const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLang}|${targetLang}`
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Translate request failed: ${res.status}`)
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 10000)
+  let res: Response
+  try {
+    res = await fetch(url, { signal: controller.signal })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new TranslateRequestError('The request timed out. Try again.')
+    }
+    throw new TranslateRequestError(
+      navigator.onLine === false ? "You're offline. Reconnect and try again." : "Couldn't reach the translation service."
+    )
+  } finally {
+    clearTimeout(timer)
+  }
+  if (!res.ok) {
+    if (res.status === 429) throw new TranslateRequestError('Too many translations right now. Try again in a minute.')
+    throw new TranslateRequestError(`Translation failed (${res.status}).`)
+  }
   const json = await res.json()
   const translated = json?.responseData?.translatedText
-  if (typeof translated !== 'string') throw new Error('Translate response missing translatedText')
+  if (typeof translated !== 'string') throw new TranslateRequestError("Couldn't translate that text.")
   return translated
 }

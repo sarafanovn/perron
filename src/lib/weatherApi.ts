@@ -3,6 +3,37 @@ import type { WeatherData } from './weatherCache'
 const HOURLY_POINTS = 24
 const DAILY_POINTS = 7
 
+// Actionable, cause-specific messages instead of a generic "couldn't load" —
+// the three failure modes a fetch() to a public API can actually hit:
+// no network at all, the API itself rate-limiting/erroring, or (from the
+// caller) a request that timed out.
+export class WeatherRequestError extends Error {}
+
+function throwForResponse(res: Response): never {
+  if (res.status === 429) throw new WeatherRequestError('Too many requests right now. Try again in a minute.')
+  if (res.status >= 500) throw new WeatherRequestError('The weather service is temporarily unavailable.')
+  throw new WeatherRequestError(`Weather request failed (${res.status}).`)
+}
+
+async function fetchWithTimeout(url: string, timeoutMs = 10000): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(url, { signal: controller.signal })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new WeatherRequestError('The request timed out. Check your connection and try again.')
+    }
+    throw new WeatherRequestError(
+      navigator.onLine === false
+        ? "You're offline. Reconnect and try again."
+        : "Couldn't reach the weather service."
+    )
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export async function fetchWeatherByCoords(lat: number, lon: number): Promise<WeatherData> {
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
@@ -10,8 +41,8 @@ export async function fetchWeatherByCoords(lat: number, lon: number): Promise<We
     `&hourly=temperature_2m,weather_code` +
     `&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset` +
     `&forecast_days=${DAILY_POINTS}&timezone=auto`
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Weather request failed: ${res.status}`)
+  const res = await fetchWithTimeout(url)
+  if (!res.ok) throwForResponse(res)
   const json = await res.json()
 
   // hourly.time is a flat array covering all forecast_days from local
@@ -52,8 +83,8 @@ export async function geocodeCity(
   name: string
 ): Promise<Array<{ label: string; lat: number; lon: number }>> {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=5`
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Geocoding request failed: ${res.status}`)
+  const res = await fetchWithTimeout(url)
+  if (!res.ok) throwForResponse(res)
   const json = await res.json()
   if (!json.results) return []
   return json.results.map((r: { name: string; country?: string; latitude: number; longitude: number }) => ({

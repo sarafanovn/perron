@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { TRANSLATE_LANGUAGES, translateText } from '../../lib/translateApi'
+import { TRANSLATE_LANGUAGES, translateText, TranslateRequestError } from '../../lib/translateApi'
 import type { Translator } from '../../lib/types'
 import './TranslatorWidget.css'
 
@@ -21,22 +21,34 @@ export function TranslatorWidget({
   // sizes have room for the full name, which reads better.
   const compact = colSpan < 3
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Tracks whether a still-in-flight request belongs to the current
+  // sourceText/langs, so a stale response that resolves after the user has
+  // already changed the input again can't overwrite the newer state — the
+  // debounce alone only prevents overlapping *requests* being started, not
+  // an in-flight one finishing late relative to a newer one.
+  const requestIdRef = useRef(0)
 
   useEffect(() => {
     if (!translator.sourceText.trim()) {
+      requestIdRef.current += 1
       onChange(translator.id, { translatedText: '' })
       setStatus('idle')
       return
     }
     setStatus('loading')
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    const requestId = ++requestIdRef.current
     debounceTimer.current = setTimeout(async () => {
       try {
         const result = await translateText(translator.sourceText, translator.sourceLang, translator.targetLang)
+        if (requestIdRef.current !== requestId) return
         onChange(translator.id, { translatedText: result })
         setStatus('idle')
-      } catch {
+      } catch (err) {
+        if (requestIdRef.current !== requestId) return
+        setErrorMessage(err instanceof TranslateRequestError ? err.message : "Couldn't translate.")
         setStatus('error')
       }
     }, TRANSLATE_DEBOUNCE_MS)
@@ -99,8 +111,13 @@ export function TranslatorWidget({
         readOnly={editMode}
         onChange={(e) => onChange(translator.id, { sourceText: e.target.value })}
       />
-      <div className="translator-result" aria-label="Translation result">
-        {status === 'error' ? "Couldn't translate." : translator.translatedText}
+      <div
+        className={`translator-result${status === 'loading' ? ' translator-result-loading' : ''}`}
+        aria-label="Translation result"
+        aria-busy={status === 'loading'}
+      >
+        {status === 'error' ? (errorMessage ?? "Couldn't translate.") : translator.translatedText}
+        {status === 'loading' && <span className="translator-spinner" aria-hidden />}
       </div>
     </div>
   )

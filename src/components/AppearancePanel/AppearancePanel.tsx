@@ -31,7 +31,7 @@ const STYLE_OPTIONS: { id: ThemeStyle; label: string }[] = [
 ]
 
 export function AppearancePanel() {
-  const { settings, update, saveError } = useSettings()
+  const { settings, update } = useSettings()
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [isCompressing, setIsCompressing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -95,6 +95,11 @@ function setFont(value: string) {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadError(null)
+    if (!file.type.startsWith('image/')) {
+      setUploadError(`"${file.name}" isn't an image file. Choose a JPG, PNG, or similar.`)
+      e.target.value = ''
+      return
+    }
     setIsCompressing(true)
     let toStore: File | Blob = file
     try {
@@ -309,8 +314,6 @@ function setFont(value: string) {
           ))}
         </select>
       </div>
-
-      {saveError && <p role="alert">Couldn't save: {saveError}</p>}
     </div>
   )
 }

@@ -1,6 +1,14 @@
-import { type DragEvent } from 'react'
+import { type DragEvent, type KeyboardEvent } from 'react'
 import { WidgetPreview, type PreviewWidgetId } from '../WidgetPreview/WidgetPreview'
-import type { ClockStyle } from '../../lib/types'
+import { useSettings } from '../../context/SettingsContext'
+import { addShortcutAt } from '../../lib/shortcutActions'
+import { addNoteAt } from '../../lib/noteActions'
+import { addTranslatorAt } from '../../lib/translatorActions'
+import { addClockAt } from '../../lib/clockActions'
+import { addSearchAt } from '../../lib/searchActions'
+import { addWeatherAt } from '../../lib/weatherActions'
+import { findFirstFreeSlot } from '../../lib/gridLayout'
+import type { ClockStyle, Settings } from '../../lib/types'
 import './WidgetPickerPanel.css'
 
 // Custom MIME type carried in the native drag's dataTransfer so WidgetGrid
@@ -49,7 +57,24 @@ const PICKER_ENTRIES: PickerEntry[] = [
   },
 ]
 
+// Places a brand-new widget of this entry's kind into the first free slot
+// that fits it, mirroring what a drag-drop onto that slot would do — the
+// shared fallback for anyone adding a widget without a pointer (keyboard,
+// switch access, or just Enter/click preference over drag).
+function addEntryToFirstFreeSlot(current: Settings, entry: PickerEntry): Settings {
+  const slot = findFirstFreeSlot(current.widgetLayout, entry.colSpan, entry.rowSpan, current.grid.columns, current.grid.rows)
+  if (!slot) return current
+  if (entry.widgetId === 'shortcut') return addShortcutAt(current, slot.col, slot.row)
+  if (entry.widgetId === 'note') return addNoteAt(current, slot.col, slot.row)
+  if (entry.widgetId === 'translator') return addTranslatorAt(current, slot.col, slot.row)
+  if (entry.widgetId === 'clock') return addClockAt(current, entry.clockStyle ?? 'digital', slot.col, slot.row)
+  if (entry.widgetId === 'search') return addSearchAt(current, slot.col, slot.row)
+  return addWeatherAt(current, slot.col, slot.row)
+}
+
 export function WidgetPickerPanel() {
+  const { update } = useSettings()
+
   function handleDragStart(e: DragEvent, entry: PickerEntry) {
     e.dataTransfer.effectAllowed = 'copy'
     e.dataTransfer.setData(
@@ -61,18 +86,32 @@ export function WidgetPickerPanel() {
     )
   }
 
+  function handleAdd(entry: PickerEntry) {
+    update((current) => addEntryToFirstFreeSlot(current, entry))
+  }
+
+  function handleKeyDown(e: KeyboardEvent, entry: PickerEntry) {
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    e.preventDefault()
+    handleAdd(entry)
+  }
+
   return (
     <div className="widget-picker-panel">
       <h3>Add widget</h3>
-      <p className="widget-picker-hint">Drag a widget onto the grid to place it.</p>
+      <p className="widget-picker-hint">Drag onto the grid, or press Enter to add.</p>
       <div className="widget-picker-list">
         {PICKER_ENTRIES.map((entry) => (
           <div
             key={entry.key}
             className="widget-picker-card"
+            role="button"
+            tabIndex={0}
             draggable
             aria-label={`Add ${entry.label}`}
             onDragStart={(e) => handleDragStart(e, entry)}
+            onClick={() => handleAdd(entry)}
+            onKeyDown={(e) => handleKeyDown(e, entry)}
           >
             <WidgetPreview
               widgetId={entry.widgetId}

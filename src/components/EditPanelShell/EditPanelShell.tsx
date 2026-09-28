@@ -53,6 +53,7 @@ export function EditPanelShell({
         {TABS.map((tab) => (
           <button
             key={tab.id}
+            id={`edit-panel-tab-${tab.id}`}
             type="button"
             role="tab"
             aria-selected={activeTab === tab.id}
@@ -67,7 +68,7 @@ export function EditPanelShell({
           <Icon name="close" />
         </button>
       </div>
-      <div className="edit-panel-content" role="tabpanel">
+      <div className="edit-panel-content" role="tabpanel" aria-labelledby={`edit-panel-tab-${activeTab}`}>
         {children}
       </div>
     </div>
