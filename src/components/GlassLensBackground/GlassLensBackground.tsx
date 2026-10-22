@@ -54,6 +54,13 @@ export function GlassLensBackground({
     window.addEventListener('resize', resize)
 
     let frameId: number | null = null
+    // What the last drawn frame showed. A static background with lenses
+    // that haven't moved renders the exact same pixels, so drawing it again
+    // every frame only burned GPU time and battery; the canvas keeps
+    // showing the last drawn frame when nothing new is drawn.
+    let lastFrameSignature = ''
+    let lastSource: HTMLCanvasElement | null = null
+    let lastRevision = -1
     function frame() {
       frameId = requestAnimationFrame(frame)
       if (document.hidden) return
@@ -75,15 +82,25 @@ export function GlassLensBackground({
         }))
 
       const bg = backgroundRef.current
-      let source: TexImageSource
       if (bg.type === 'animated') {
         if (!vantaCanvasRef.current) return
-        source = vantaCanvasRef.current
-      } else {
-        source = getStaticBackgroundCanvas(bg.type, bg.value, canvas!.width, canvas!.height)
+        lastFrameSignature = ''
+        renderer!.render(lenses, vantaCanvasRef.current, canvas!.width, canvas!.height, true)
+        return
       }
 
-      renderer!.render(lenses, source, canvas!.width, canvas!.height, bg.type === 'animated')
+      const { canvas: source, revision } = getStaticBackgroundCanvas(bg.type, bg.value, canvas!.width, canvas!.height)
+      const signature =
+        `${revision}:${canvas!.width}x${canvas!.height}:` +
+        lenses.map((l) => `${l.x},${l.y},${l.width},${l.height},${l.shape}`).join(';')
+      if (signature === lastFrameSignature && source === lastSource) return
+      // A changed revision means an image finished loading into the same
+      // canvas object the texture was uploaded from while still blank.
+      const forceUpload = source === lastSource && revision !== lastRevision
+      lastFrameSignature = signature
+      lastSource = source
+      lastRevision = revision
+      renderer!.render(lenses, source, canvas!.width, canvas!.height, forceUpload)
     }
     frameId = requestAnimationFrame(frame)
 

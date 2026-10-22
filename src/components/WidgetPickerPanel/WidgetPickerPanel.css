@@ -17,6 +17,10 @@
   color: var(--color-text-secondary);
 }
 
+.widget-picker-no-room {
+  color: var(--color-text-primary);
+}
+
 .widget-picker-list {
   display: flex;
   flex-direction: column;

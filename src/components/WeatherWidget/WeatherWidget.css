@@ -16,7 +16,9 @@
 .weather-widget.weather-widget-plain {
   background: var(--color-surface);
   color: var(--color-text-primary);
-  justify-content: center;
+  /* "safe": once the city results overflow the widget, plain center pushed
+     the first ones above the scrollable area where they couldn't be reached. */
+  justify-content: safe center;
 }
 
 /* User opted out of the time/condition gradient (theme.weather setting) —
@@ -55,10 +57,52 @@
   border-radius: 10px;
 }
 
+.weather-widget.weather-widget-plain {
+  overflow-y: auto;
+}
+
 .weather-widget-plain .city-option {
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   padding: 4px 0;
   color: var(--color-text-secondary);
+}
+
+.weather-widget-plain .city-option:hover {
+  color: var(--color-text-primary);
+}
+
+.weather-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.weather-actions button {
+  border: none;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 12px;
+  background: var(--color-input-bg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+button.weather-location {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button.weather-location:hover {
+  text-decoration: underline;
 }
 
 .weather-current {
@@ -66,6 +110,26 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+}
+
+/* At the 2x2 size there's no room beside the temperature for the location
+   and "feels like" line — side by side they ran off the widget's edge — so
+   they stack underneath instead. */
+.weather-widget-small .weather-current {
+  flex-direction: column;
+  min-width: 0;
+}
+
+.weather-widget-small .weather-current-details {
+  align-items: flex-start;
+  max-width: 100%;
+}
+
+.weather-current-details > * {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .weather-current-main {

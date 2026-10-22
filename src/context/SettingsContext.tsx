@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { loadSettings, updateSettings as persistUpdate } from '../lib/storage'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { isSettingsStorageKey, loadSettings, saveSettings } from '../lib/storage'
 import { BACKGROUND_PRESETS } from '../lib/backgroundPresets'
 import type { Settings } from '../lib/types'
 
@@ -37,17 +37,45 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => loadSettings())
   const [saveError, setSaveError] = useState<string | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
+  // The source of truth for patches, updated synchronously so several
+  // update() calls in one tick each see the previous one's result —
+  // re-reading localStorage on every update instead meant JSON-parsing the
+  // whole settings blob on every keystroke.
+  const settingsRef = useRef(settings)
 
-  const update: SettingsContextValue['update'] = (patch) => {
-    const result = persistUpdate(patch)
-    setSettings(result.settings)
-    setSaveError(result.ok ? null : result.error)
-  }
+  const update = useCallback<SettingsContextValue['update']>((patch) => {
+    const current = settingsRef.current
+    const next = patch(current)
+    if (next === current) return
+    const result = saveSettings(next)
+    if (!result.ok) {
+      setSaveError(result.error)
+      return
+    }
+    settingsRef.current = next
+    setSettings(next)
+    setSaveError(null)
+  }, [])
+
+  // Another Perron tab saved settings: adopt them, so this tab neither shows
+  // stale widgets nor overwrites the other tab's changes on its next save.
+  useEffect(() => {
+    function handleStorage(e: StorageEvent) {
+      if (!isSettingsStorageKey(e.key)) return
+      const fresh = loadSettings()
+      settingsRef.current = fresh
+      setSettings(fresh)
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   useEffect(() => {
     const root = document.documentElement
     root.style.setProperty('--color-accent', settings.theme.accentColor)
-    if (settings.theme.font !== 'system') {
+    if (settings.theme.font === 'system') {
+      root.style.removeProperty('--font-family-base')
+    } else {
       root.style.setProperty('--font-family-base', settings.theme.font)
     }
     root.style.setProperty('--page-background', backgroundCssValue(settings))

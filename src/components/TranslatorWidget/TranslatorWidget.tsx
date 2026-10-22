@@ -29,8 +29,15 @@ export function TranslatorWidget({
   // debounce alone only prevents overlapping *requests* being started, not
   // an in-flight one finishing late relative to a newer one.
   const requestIdRef = useRef(0)
+  // The saved translatedText already belongs to the saved sourceText, so
+  // there's nothing to fetch on mount — re-translating it on every new tab
+  // only burned through MyMemory's small anonymous daily quota.
+  const isMountRef = useRef(true)
 
   useEffect(() => {
+    const isMount = isMountRef.current
+    isMountRef.current = false
+    if (isMount && translator.translatedText) return
     if (!translator.sourceText.trim()) {
       requestIdRef.current += 1
       onChange(translator.id, { translatedText: '' })

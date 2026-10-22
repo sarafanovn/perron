@@ -24,8 +24,8 @@ export function addTranslatorAt(settings: Settings, col: number, row: number): S
     widgetIdForTranslator(newTranslator.id),
     col,
     row,
-    2,
-    2,
+    3,
+    3,
     settings.grid.columns,
     settings.grid.rows
   )

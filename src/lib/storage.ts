@@ -1,4 +1,5 @@
-import { findFirstFreeCell } from './gridLayout'
+import { findFirstFreeCell, resizeWidget } from './gridLayout'
+import { closestPreset, sizePresets } from './widgetSizes'
 import { widgetIdForShortcut } from './shortcutWidgets'
 import type { Settings } from './types'
 
@@ -46,7 +47,19 @@ function isValidGrid(value: unknown): value is Settings['grid'] {
 // widgetLayout entry for shortcuts that already exist in settings.shortcuts.
 // Reconcile both on load so the grid never renders an orphaned or
 // duplicate-less shortcut.
-function migrateShortcutWidgets(settings: Settings): Settings {
+function migrateShortcutWidgets(loaded: Settings): Settings {
+  // A shortcut dropped onto the grid but never filled in (tab closed with
+  // its form still open) is just an empty tile — drop it rather than
+  // greeting every new tab with that form again.
+  const blank = loaded.shortcuts.filter((s) => !s.label && !s.url).map((s) => widgetIdForShortcut(s.id))
+  const settings =
+    blank.length === 0
+      ? loaded
+      : {
+          ...loaded,
+          shortcuts: loaded.shortcuts.filter((s) => s.label || s.url),
+          widgetLayout: loaded.widgetLayout.filter((w) => !blank.includes(w.widgetId)),
+        }
   const withoutLegacyEntry = settings.widgetLayout.filter((w) => w.widgetId !== 'shortcuts')
   let layout = withoutLegacyEntry
   for (const shortcut of settings.shortcuts) {
@@ -133,18 +146,75 @@ function migrateClockSettings(settings: Settings): Settings {
   return { ...settings, clocks }
 }
 
+// A background image is a base64 data URL that can run to several MB, so
+// it lives under its own key and the settings blob only holds this marker.
+// Otherwise every settings write — one per keystroke in a note or
+// translator — would re-serialize and rewrite the whole image too.
+const BACKGROUND_IMAGE_KEY = 'perron:background-image:v1'
+const BACKGROUND_IMAGE_REF = 'stored:background-image'
+
+// The image value most recently read from or written to
+// BACKGROUND_IMAGE_KEY, so saveSettings only rewrites the image when it
+// actually changed.
+let storedBackgroundImage: string | null = null
+
+function restoreBackgroundImage(settings: Settings): Settings {
+  const { background } = settings.theme
+  if (background.type !== 'image' || background.value !== BACKGROUND_IMAGE_REF) {
+    // Settings saved before the image moved to its own key still carry the
+    // data URL inline; the next save moves it out.
+    storedBackgroundImage = null
+    return settings
+  }
+  const image = localStorage.getItem(BACKGROUND_IMAGE_KEY)
+  storedBackgroundImage = image
+  if (!image) return { ...settings, theme: { ...settings.theme, background: DEFAULT_SETTINGS.theme.background } }
+  return { ...settings, theme: { ...settings.theme, background: { type: 'image', value: image } } }
+}
+
+/** Deletes all saved settings, so the next load starts from DEFAULT_SETTINGS. */
+export function clearSettings(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(BACKGROUND_IMAGE_KEY)
+  } catch {
+    // Storage blocked entirely: nothing was saved to clear.
+  }
+}
+
+/** True for the localStorage keys loadSettings reads — used to pick up changes saved by another tab. */
+export function isSettingsStorageKey(key: string | null): boolean {
+  return key === STORAGE_KEY || key === BACKGROUND_IMAGE_KEY
+}
+
+// A widget saved at a size that is no longer one of its presets (notes used
+// to allow 1x1, translators 2x2/2x4) snaps to the closest preset that is,
+// moving neighbors aside the same way a manual resize would.
+function migrateWidgetSizes(settings: Settings): Settings {
+  let layout = settings.widgetLayout
+  for (const entry of settings.widgetLayout) {
+    const presets = sizePresets(entry.widgetId)
+    if (presets.some((p) => p.colSpan === entry.colSpan && p.rowSpan === entry.rowSpan)) continue
+    const preset = closestPreset(entry.widgetId, entry.colSpan, entry.rowSpan)
+    layout = resizeWidget(layout, entry.widgetId, preset.colSpan, preset.rowSpan, settings.grid.columns, settings.grid.rows)
+  }
+  return layout === settings.widgetLayout ? settings : { ...settings, widgetLayout: layout }
+}
+
 export function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return DEFAULT_SETTINGS
     const parsed = JSON.parse(raw)
     if (!isValidSettings(parsed)) return DEFAULT_SETTINGS
-    return migrateShortcutWidgets(
-      migrateClockSettings(
-        migrateWeatherSettings(
-          migrateThemeStyle(migrateThemeMode(migrateWidgetCollections(migrateGridSettings(parsed))))
+    return restoreBackgroundImage(
+      migrateWidgetSizes(migrateShortcutWidgets(
+        migrateClockSettings(
+          migrateWeatherSettings(
+            migrateThemeStyle(migrateThemeMode(migrateWidgetCollections(migrateGridSettings(parsed))))
+          )
         )
-      )
+      ))
     )
   } catch {
     return DEFAULT_SETTINGS
@@ -153,24 +223,21 @@ export function loadSettings(): Settings {
 
 export function saveSettings(settings: Settings): { ok: true } | { ok: false; error: string } {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+    const { background } = settings.theme
+    let toStore = settings
+    if (background.type === 'image') {
+      if (background.value !== storedBackgroundImage) {
+        localStorage.setItem(BACKGROUND_IMAGE_KEY, background.value)
+        storedBackgroundImage = background.value
+      }
+      toStore = { ...settings, theme: { ...settings.theme, background: { type: 'image', value: BACKGROUND_IMAGE_REF } } }
+    } else if (storedBackgroundImage !== null) {
+      localStorage.removeItem(BACKGROUND_IMAGE_KEY)
+      storedBackgroundImage = null
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore))
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'unknown storage error' }
   }
-}
-
-export function updateSettings(
-  patch: (current: Settings) => Settings
-): { ok: true; settings: Settings } | { ok: false; error: string; settings: Settings } {
-  const current = loadSettings()
-  const next = patch(current)
-  if (next === current) {
-    return { ok: true, settings: current }
-  }
-  const result = saveSettings(next)
-  if (result.ok) {
-    return { ok: true, settings: next }
-  }
-  return { ok: false, error: result.error, settings: current }
 }

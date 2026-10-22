@@ -81,15 +81,19 @@ export async function fetchWeatherByCoords(lat: number, lon: number): Promise<We
 
 export async function geocodeCity(
   name: string
-): Promise<Array<{ label: string; lat: number; lon: number }>> {
+): Promise<Array<{ name: string; label: string; lat: number; lon: number }>> {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=5`
   const res = await fetchWithTimeout(url)
   if (!res.ok) throwForResponse(res)
   const json = await res.json()
   if (!json.results) return []
-  return json.results.map((r: { name: string; country?: string; latitude: number; longitude: number }) => ({
-    label: r.country ? `${r.name}, ${r.country}` : r.name,
-    lat: r.latitude,
-    lon: r.longitude,
-  }))
+  return json.results.map(
+    (r: { name: string; admin1?: string; country?: string; latitude: number; longitude: number }) => ({
+      name: r.name,
+      // The region tells same-named places apart ("Moscow, Idaho, United States").
+      label: [r.name, r.admin1 !== r.name ? r.admin1 : undefined, r.country].filter(Boolean).join(', '),
+      lat: r.latitude,
+      lon: r.longitude,
+    })
+  )
 }

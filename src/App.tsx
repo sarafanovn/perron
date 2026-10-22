@@ -10,6 +10,7 @@ import { AnimatedBackground } from './components/AnimatedBackground/AnimatedBack
 import { GlassLensBackground } from './components/GlassLensBackground/GlassLensBackground'
 import { parseAnimatedBackground } from './lib/backgroundPresets'
 import { SaveErrorToast } from './components/SaveErrorToast/SaveErrorToast'
+import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary'
 import './App.css'
 
 function EditControls() {
@@ -56,15 +57,17 @@ function AppBackgroundLayers() {
 
 export default function App() {
   return (
-    <SettingsProvider>
-      <GlassLensProvider>
-        <div className="app-root">
-          <AppBackgroundLayers />
-          <WidgetGrid />
-          <EditControls />
-          <SaveErrorToast />
-        </div>
-      </GlassLensProvider>
-    </SettingsProvider>
+    <ErrorBoundary>
+      <SettingsProvider>
+        <GlassLensProvider>
+          <div className="app-root">
+            <AppBackgroundLayers />
+            <WidgetGrid />
+            <EditControls />
+            <SaveErrorToast />
+          </div>
+        </GlassLensProvider>
+      </SettingsProvider>
+    </ErrorBoundary>
   )
 }

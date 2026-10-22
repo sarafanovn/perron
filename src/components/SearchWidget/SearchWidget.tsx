@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { useSettings } from '../../context/SettingsContext'
 import { SEARCH_ENGINES } from '../../lib/searchEngines'
 import { faviconUrlFor } from '../../lib/favicon'
@@ -12,15 +13,23 @@ const ENGINE_IDS = Object.keys(SEARCH_ENGINES) as SearchEngineId[]
  * current engine's favicon instead of its name, and opens a small menu of
  * every engine's logo on click. Closes on outside click or Escape, same as
  * a native select's own dismiss behavior.
+ *
+ * The menu is portaled to <body> and positioned under the trigger: inside
+ * the widget, the search bar's own pill clip (overflow: hidden) cut it off
+ * to a sliver just below the bar.
  */
 function EngineMenu({ engine, onChange }: { engine: SearchEngineId; onChange: (id: SearchEngineId) => void }) {
   const [open, setOpen] = useState(false)
+  const [menuPosition, setMenuPosition] = useState<{ left: number; top: number } | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
 
   useEffect(() => {
     if (!open) return
     function handlePointerDown(e: PointerEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      if (rootRef.current?.contains(target) || listRef.current?.contains(target)) return
+      setOpen(false)
     }
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false)
@@ -41,12 +50,24 @@ function EngineMenu({ engine, onChange }: { engine: SearchEngineId; onChange: (i
         aria-label={`Search engine: ${SEARCH_ENGINES[engine].label}`}
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          const rect = rootRef.current?.getBoundingClientRect()
+          if (rect) setMenuPosition({ left: rect.left, top: rect.bottom + 8 })
+          setOpen((v) => !v)
+        }}
       >
         <img src={faviconUrlFor(SEARCH_ENGINES[engine].homepageUrl)} alt="" />
       </button>
-      {open && (
-        <ul className="search-engine-list" role="listbox" aria-label="Search engine">
+      {open &&
+        menuPosition &&
+        createPortal(
+        <ul
+          ref={listRef}
+          className="search-engine-list"
+          role="listbox"
+          aria-label="Search engine"
+          style={{ left: menuPosition.left, top: menuPosition.top }}
+        >
           {ENGINE_IDS.map((id) => (
             <li key={id}>
               <button
@@ -64,8 +85,9 @@ function EngineMenu({ engine, onChange }: { engine: SearchEngineId; onChange: (i
               </button>
             </li>
           ))}
-        </ul>
-      )}
+        </ul>,
+          document.body
+        )}
     </div>
   )
 }

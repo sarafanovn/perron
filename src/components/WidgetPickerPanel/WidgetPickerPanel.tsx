@@ -1,4 +1,4 @@
-import { type DragEvent, type KeyboardEvent } from 'react'
+import { useState, type DragEvent, type KeyboardEvent } from 'react'
 import { WidgetPreview, type PreviewWidgetId } from '../WidgetPreview/WidgetPreview'
 import { useSettings } from '../../context/SettingsContext'
 import { addShortcutAt } from '../../lib/shortcutActions'
@@ -7,7 +7,7 @@ import { addTranslatorAt } from '../../lib/translatorActions'
 import { addClockAt } from '../../lib/clockActions'
 import { addSearchAt } from '../../lib/searchActions'
 import { addWeatherAt } from '../../lib/weatherActions'
-import { findFirstFreeSlot } from '../../lib/gridLayout'
+import { findFirstFreeSlot, withDisplayedLayout } from '../../lib/gridLayout'
 import type { ClockStyle, Settings } from '../../lib/types'
 import './WidgetPickerPanel.css'
 
@@ -37,8 +37,8 @@ const PICKER_ENTRIES: PickerEntry[] = [
   { key: 'search', widgetId: 'search', label: 'Search', colSpan: 4, rowSpan: 1 },
   { key: 'weather', widgetId: 'weather', label: 'Weather', colSpan: 2, rowSpan: 2 },
   { key: 'shortcut', widgetId: 'shortcut', label: 'Shortcut', colSpan: 1, rowSpan: 1 },
-  { key: 'note', widgetId: 'note', label: 'Note', colSpan: 1, rowSpan: 1 },
-  { key: 'translator', widgetId: 'translator', label: 'Translator', colSpan: 2, rowSpan: 2 },
+  { key: 'note', widgetId: 'note', label: 'Note', colSpan: 2, rowSpan: 2 },
+  { key: 'translator', widgetId: 'translator', label: 'Translator', colSpan: 3, rowSpan: 3 },
   {
     key: 'clock-digital',
     widgetId: 'clock',
@@ -61,9 +61,10 @@ const PICKER_ENTRIES: PickerEntry[] = [
 // that fits it, mirroring what a drag-drop onto that slot would do — the
 // shared fallback for anyone adding a widget without a pointer (keyboard,
 // switch access, or just Enter/click preference over drag).
-function addEntryToFirstFreeSlot(current: Settings, entry: PickerEntry): Settings {
+function addEntryToFirstFreeSlot(saved: Settings, entry: PickerEntry): Settings {
+  const current = withDisplayedLayout(saved, saved.grid.columns, saved.grid.rows)
   const slot = findFirstFreeSlot(current.widgetLayout, entry.colSpan, entry.rowSpan, current.grid.columns, current.grid.rows)
-  if (!slot) return current
+  if (!slot) return saved
   if (entry.widgetId === 'shortcut') return addShortcutAt(current, slot.col, slot.row)
   if (entry.widgetId === 'note') return addNoteAt(current, slot.col, slot.row)
   if (entry.widgetId === 'translator') return addTranslatorAt(current, slot.col, slot.row)
@@ -73,7 +74,8 @@ function addEntryToFirstFreeSlot(current: Settings, entry: PickerEntry): Setting
 }
 
 export function WidgetPickerPanel() {
-  const { update } = useSettings()
+  const { settings, update } = useSettings()
+  const [noRoomFor, setNoRoomFor] = useState<string | null>(null)
 
   function handleDragStart(e: DragEvent, entry: PickerEntry) {
     e.dataTransfer.effectAllowed = 'copy'
@@ -87,6 +89,13 @@ export function WidgetPickerPanel() {
   }
 
   function handleAdd(entry: PickerEntry) {
+    // Adding used to silently do nothing once the grid had no free spot
+    // big enough — say so instead.
+    if (addEntryToFirstFreeSlot(settings, entry) === settings) {
+      setNoRoomFor(entry.label)
+      return
+    }
+    setNoRoomFor(null)
     update((current) => addEntryToFirstFreeSlot(current, entry))
   }
 
@@ -99,7 +108,12 @@ export function WidgetPickerPanel() {
   return (
     <div className="widget-picker-panel">
       <h3>Add widget</h3>
-      <p className="widget-picker-hint">Drag onto the grid, or press Enter to add.</p>
+      <p className="widget-picker-hint">Click to add, or drag onto the grid.</p>
+      {noRoomFor && (
+        <p className="widget-picker-hint widget-picker-no-room" role="status">
+          No free space for {noRoomFor}. Remove or shrink a widget first.
+        </p>
+      )}
       <div className="widget-picker-list">
         {PICKER_ENTRIES.map((entry) => (
           <div

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import { useSettings } from '../../context/SettingsContext'
-import { moveWidget, reconcileLayout, resizeWidget } from '../../lib/gridLayout'
+import { moveWidget, reconcileLayout, resizeWidget, withDisplayedLayout } from '../../lib/gridLayout'
 import { addShortcutAt, removeShortcut } from '../../lib/shortcutActions'
 import { addNoteAt, removeNote } from '../../lib/noteActions'
 import { addTranslatorAt, removeTranslator } from '../../lib/translatorActions'
@@ -118,6 +118,8 @@ export function WidgetGrid() {
   const { settings, update, isEditMode, setIsEditMode } = useSettings()
   const [draggingId, setDraggingId] = useState<WidgetId | null>(null)
   const [resizeState, setResizeState] = useState<ResizeState | null>(null)
+  const resizeStateRef = useRef(resizeState)
+  resizeStateRef.current = resizeState
   const [styleEditorWidgetId, setStyleEditorWidgetId] = useState<WidgetId | null>(null)
   const [styleEditorAnchor, setStyleEditorAnchor] = useState<{ x: number; y: number } | null>(null)
   // Frozen so WidgetStylePanel has a target/anchor to render during its
@@ -170,17 +172,15 @@ export function WidgetGrid() {
     setStyleEditorAnchor(null)
   }
 
-  // Whenever the grid's bounds shrink (density sliders, or a window resize
-  // that lowers the viewport-derived cell count), pull back in any widget
-  // that now runs off the edge instead of leaving it stuck out of view.
-  useEffect(() => {
-    update((current) => {
-      const reconciled = reconcileLayout(current.widgetLayout, columns, rows)
-      if (reconciled === current.widgetLayout) return current
-      return { ...current, widgetLayout: reconciled }
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columns, rows])
+  // When the window is too small for the saved layout, widgets that would
+  // run off the edge are shown in the first free slot instead — computed
+  // here, not saved, so the saved layout comes back intact once the window
+  // grows again. Persisting it used to shuffle the layout for good after
+  // e.g. briefly opening devtools or a narrow window.
+  const layout = useMemo(
+    () => reconcileLayout(settings.widgetLayout, columns, rows),
+    [settings.widgetLayout, columns, rows]
+  )
 
   // Where within the dragged widget (in whole cells from its top-left) the
   // pointer originally grabbed it — so dropping lands the *grabbed* cell
@@ -238,13 +238,18 @@ export function WidgetGrid() {
       // meaningful "grab point within the shape" to preserve — it's always
       // dropped with its top-left at the cursor's cell.
       const target = point
-      update((current) => {
-        if (widgetId === 'shortcut') return addShortcutAt(current, target.col, target.row)
-        if (widgetId === 'note') return addNoteAt(current, target.col, target.row)
-        if (widgetId === 'translator') return addTranslatorAt(current, target.col, target.row)
-        if (widgetId === 'clock') return addClockAt(current, clockStyle ?? 'digital', target.col, target.row)
-        if (widgetId === 'search') return addSearchAt(current, target.col, target.row)
-        return addWeatherAt(current, target.col, target.row)
+      update((saved) => {
+        const current = withDisplayedLayout(saved, columns, rows)
+        let next = current
+        if (widgetId === 'shortcut') next = addShortcutAt(current, target.col, target.row)
+        else if (widgetId === 'note') next = addNoteAt(current, target.col, target.row)
+        else if (widgetId === 'translator') next = addTranslatorAt(current, target.col, target.row)
+        else if (widgetId === 'clock') next = addClockAt(current, clockStyle ?? 'digital', target.col, target.row)
+        else if (widgetId === 'search') next = addSearchAt(current, target.col, target.row)
+        else next = addWeatherAt(current, target.col, target.row)
+        // Dropped onto an occupied or too-small spot: keep the saved layout
+        // as it was rather than committing the displayed one.
+        return next === current ? saved : next
       })
       return
     }
@@ -261,7 +266,14 @@ export function WidgetGrid() {
       }
       update((current) => ({
         ...current,
-        widgetLayout: moveWidget(current.widgetLayout, draggingId, target.col, target.row, columns, rows),
+        widgetLayout: moveWidget(
+          reconcileLayout(current.widgetLayout, columns, rows),
+          draggingId,
+          target.col,
+          target.row,
+          columns,
+          rows
+        ),
       }))
     }
     setDraggingId(null)
@@ -418,22 +430,24 @@ export function WidgetGrid() {
     }
 
     function handleUp() {
-      setResizeState((current) => {
-        if (!current) return null
-        const preset = closestPreset(current.widgetId, current.trialColSpan, current.trialRowSpan)
-        update((settings) => ({
-          ...settings,
-          widgetLayout: resizeWidget(
-            settings.widgetLayout,
-            current.widgetId,
-            preset.colSpan,
-            preset.rowSpan,
-            columns,
-            rows
-          ),
-        }))
-        return null
-      })
+      // Read from the ref rather than inside a setResizeState updater:
+      // updaters must be pure (StrictMode runs them twice), and this one
+      // used to save settings as a side effect.
+      const current = resizeStateRef.current
+      setResizeState(null)
+      if (!current) return
+      const preset = closestPreset(current.widgetId, current.trialColSpan, current.trialRowSpan)
+      update((settings) => ({
+        ...settings,
+        widgetLayout: resizeWidget(
+          reconcileLayout(settings.widgetLayout, columns, rows),
+          current.widgetId,
+          preset.colSpan,
+          preset.rowSpan,
+          columns,
+          rows
+        ),
+      }))
     }
 
     window.addEventListener('mousemove', handleMove)
@@ -484,6 +498,10 @@ export function WidgetGrid() {
           colSpan={colSpan}
           rowSpan={rowSpan}
           dynamicBackground={settings.weather.dynamicBackground}
+          location={settings.weather.location ?? null}
+          onLocationChange={(location) =>
+            update((current) => ({ ...current, weather: { ...current.weather, location } }))
+          }
         />
       )
     }
@@ -552,7 +570,7 @@ export function WidgetGrid() {
         onDrop={handleGridDrop}
         onClick={handleGridBackgroundClick}
       >
-      {settings.widgetLayout.map((entry, index) => {
+      {layout.map((entry, index) => {
         const isResizingThis = resizeState?.widgetId === entry.widgetId
         const presets = sizePresets(entry.widgetId)
         const canResizeCol = presets.some((p) => p.colSpan !== presets[0].colSpan)
@@ -608,7 +626,8 @@ export function WidgetGrid() {
             </div>
             {isEditMode && !isUnconfiguredShortcut && (
               <>
-                <span
+                <button
+                  type="button"
                   className="widget-badge widget-badge-remove"
                   data-tooltip={`Remove ${widgetDisplayName(entry.widgetId)}`}
                   aria-label={`Remove ${widgetDisplayName(entry.widgetId)}`}
@@ -619,16 +638,17 @@ export function WidgetGrid() {
                   }}
                 >
                   <Icon name="close" size={10} />
-                </span>
+                </button>
                 {hasStyleEditor(entry.widgetId) && (
-                  <span
+                  <button
+                    type="button"
                     className="widget-badge widget-badge-style"
                     data-tooltip="Edit style"
                     aria-label={`Edit ${widgetDisplayName(entry.widgetId)} style`}
                     onClick={(e) => openStyleEditor(e, entry.widgetId)}
                   >
                     <Icon name="edit" size={10} />
-                  </span>
+                  </button>
                 )}
               </>
             )}

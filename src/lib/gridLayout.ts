@@ -1,4 +1,4 @@
-import type { WidgetId, WidgetLayoutEntry } from './types'
+import type { Settings, WidgetId, WidgetLayoutEntry } from './types'
 
 /**
  * Moves one widget to a new top-left cell, keeping its own colSpan/rowSpan.
@@ -221,4 +221,16 @@ export function resizeWidget(
   }
 
   return result
+}
+
+/**
+ * The saved layout as it is actually shown on the current grid (see
+ * reconcileLayout). Edits — move, resize, add — start from this rather
+ * than from the raw saved layout, so they act on what the user sees; the
+ * saved layout itself only changes when the user edits it, never just
+ * because the window got smaller for a while.
+ */
+export function withDisplayedLayout(settings: Settings, columns: number, rows: number): Settings {
+  const widgetLayout = reconcileLayout(settings.widgetLayout, columns, rows)
+  return widgetLayout === settings.widgetLayout ? settings : { ...settings, widgetLayout }
 }

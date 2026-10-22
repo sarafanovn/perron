@@ -1,4 +1,5 @@
 import { faviconUrlFor } from '../../lib/favicon'
+import { normalizeShortcutUrl } from '../../lib/shortcutUrl'
 import type { Shortcut } from '../../lib/types'
 import './ShortcutTile.css'
 
@@ -12,14 +13,14 @@ export function ShortcutTile({
   return (
     <a
       className={`shortcut-tile${editMode ? ' edit-mode' : ''}`}
-      href={shortcut.url}
+      href={normalizeShortcutUrl(shortcut.url)}
       draggable={false}
       onClick={(e) => {
         if (editMode) e.preventDefault()
       }}
     >
       <img src={shortcut.iconUrl ?? faviconUrlFor(shortcut.url)} alt="" />
-      {shortcut.label}
+      <span className="shortcut-label">{shortcut.label}</span>
     </a>
   )
 }

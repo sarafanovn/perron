@@ -45,15 +45,13 @@
 }
 
 .search-engine-list {
-  position: absolute;
-  top: calc(100% + var(--space-2));
-  left: 0;
-  z-index: 10;
+  position: fixed;
+  z-index: 50;
   margin: 0;
   padding: var(--space-1);
   list-style: none;
   min-width: 160px;
-  background: var(--color-surface);
+  background: var(--color-bg-surface-solid);
   border-radius: var(--space-3);
   box-shadow: var(--shadow-widget);
 }

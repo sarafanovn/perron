@@ -15,8 +15,8 @@ export function addNoteAt(settings: Settings, col: number, row: number): Setting
     widgetIdForNote(newNote.id),
     col,
     row,
-    1,
-    1,
+    2,
+    2,
     settings.grid.columns,
     settings.grid.rows
   )

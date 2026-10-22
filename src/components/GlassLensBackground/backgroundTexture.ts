@@ -3,8 +3,17 @@ import { BACKGROUND_PRESETS } from '../../lib/backgroundPresets'
 export type StaticBackgroundKind = 'gradient' | 'solid' | 'image'
 
 interface CacheEntry {
-  key: string
+  kind: StaticBackgroundKind
+  // Compared as-is rather than folded into a combined string key: for an
+  // image this is a multi-MB data URL, and building that key every frame
+  // meant allocating megabytes 60 times a second.
+  cssValue: string
+  width: number
+  height: number
   canvas: HTMLCanvasElement
+  // Bumped once an image finishes drawing into `canvas` after the canvas
+  // was already handed out (blank), so the caller knows to re-upload it.
+  revision: number
   image?: HTMLImageElement
 }
 
@@ -95,11 +104,18 @@ export function getStaticBackgroundCanvas(
   cssValue: string,
   width: number,
   height: number
-): HTMLCanvasElement {
-  const resolved = resolveCssBackground(kind, cssValue)
-  const key = `${kind}:${resolved}:${width}x${height}`
-  if (cache && cache.key === key) return cache.canvas
+): { canvas: HTMLCanvasElement; revision: number } {
+  if (
+    cache &&
+    cache.kind === kind &&
+    cache.cssValue === cssValue &&
+    cache.width === width &&
+    cache.height === height
+  ) {
+    return cache
+  }
 
+  const resolved = resolveCssBackground(kind, cssValue)
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -107,19 +123,21 @@ export function getStaticBackgroundCanvas(
 
   if (kind === 'image') {
     const img = new Image()
+    const entry: CacheEntry = { kind, cssValue, width, height, canvas, revision: 0, image: img }
     img.onload = () => {
       if (!ctx) return
       const scale = Math.max(width / img.width, height / img.height)
       const drawWidth = img.width * scale
       const drawHeight = img.height * scale
       ctx.drawImage(img, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight)
+      entry.revision += 1
     }
     img.src = resolved
-    cache = { key, canvas, image: img }
-    return canvas
+    cache = entry
+    return entry
   }
 
   paintCssBackground(ctx, resolved, width, height)
-  cache = { key, canvas }
-  return canvas
+  cache = { kind, cssValue, width, height, canvas, revision: 0 }
+  return cache
 }

@@ -35,14 +35,20 @@ const SEARCH_PRESETS: SizeSpan[] = [
   { colSpan: 10, rowSpan: 1 },
 ]
 
+// No 1x1: a ~60px cell leaves room for about one character of text once
+// the textarea's padding is taken out.
 const NOTE_PRESETS: SizeSpan[] = [
-  { colSpan: 1, rowSpan: 1 },
   { colSpan: 2, rowSpan: 2 },
+  { colSpan: 4, rowSpan: 2 },
+  { colSpan: 4, rowSpan: 4 },
 ]
 
+// Two language pickers, a swap button, the input and the result need about
+// 3 cells each way; at 2 columns even the 3-letter language codes got cut
+// down to "R…".
 const TRANSLATOR_PRESETS: SizeSpan[] = [
-  { colSpan: 2, rowSpan: 2 },
-  { colSpan: 2, rowSpan: 4 },
+  { colSpan: 3, rowSpan: 3 },
+  { colSpan: 4, rowSpan: 4 },
 ]
 
 // Both clock styles (digital, analog) share the same preset set: 2x2

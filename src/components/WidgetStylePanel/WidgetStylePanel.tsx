@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react'
+import { normalizeShortcutUrl } from '../../lib/shortcutUrl'
 import { Icon } from '../Icon/Icon'
 import { useGlassLens } from '../../context/GlassLensContext'
 import { usePresence } from '../../lib/usePresence'
@@ -139,7 +140,7 @@ function ShortcutStyleFields({
   function handleSave(e: FormEvent) {
     e.preventDefault()
     if (!label.trim() || !url.trim()) return
-    target.onSave({ label: label.trim(), url: url.trim() })
+    target.onSave({ label: label.trim(), url: normalizeShortcutUrl(url) })
     onClose()
   }
 

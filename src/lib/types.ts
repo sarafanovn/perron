@@ -96,12 +96,21 @@ export interface GridSettings {
   rows: number
 }
 
+export interface WeatherLocation {
+  lat: number
+  lon: number
+  label: string
+}
+
 export interface WeatherSettings {
   // true (default): the widget paints its own time/condition-based gradient.
   // false: it renders as a plain surface like every other widget
   // (--color-surface), for users who want visual consistency over the
   // weather-driven color.
   dynamicBackground: boolean
+  // A city the user picked by hand. Absent/null: use the browser's
+  // geolocation instead.
+  location?: WeatherLocation | null
 }
 
 export interface Settings {
