@@ -333,7 +333,7 @@ export function WeatherWidget({
             <span className="weather-detail-value">{Math.round(data.windKph)} km/h</span>
           </div>
           <div className="weather-detail-card">
-            <span className="weather-detail-label">UV Index</span>
+            <span className="weather-detail-label">UV</span>
             <span className="weather-detail-value">{Math.round(data.uvIndex)}</span>
             <span className="weather-detail-sublabel">{uvIndexLabel(data.uvIndex)}</span>
           </div>

@@ -189,14 +189,21 @@ button.weather-location:hover {
   gap: 6px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.25);
-  overflow-y: auto;
   /* Grows to fill whatever vertical space the current-conditions/hourly/
      details sections don't use, instead of leaving a gap of empty widget
      below a short forecast list at the largest (4x4) size. */
   flex: 1;
+  min-height: 0;
+  /* Shows as many whole days as fit, never a scrollbar (which used to
+     appear here, leaving ~2 of 7 days visible) and never a half-cut row:
+     a day that doesn't fit wraps into a second column, which full-width
+     rows push entirely past the right edge, where overflow clips it. */
+  flex-wrap: wrap;
+  overflow: hidden;
 }
 
 .weather-daily-row {
+  width: 100%;
   display: grid;
   grid-template-columns: 2.5em 1.5em 1fr 1fr;
   align-items: center;
@@ -226,24 +233,24 @@ button.weather-location:hover {
   border-top: 1px solid rgba(255, 255, 255, 0.25);
 }
 
+/* One compact line ("Humidity 46%") rather than tall cards: at 4x4 the
+   cards took ~80px of a 300px widget, which squeezed the daily forecast
+   down to two rows. */
 .weather-detail-card {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 8px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.16);
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .weather-detail-label {
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
   opacity: 0.75;
 }
 
 .weather-detail-value {
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -254,10 +261,6 @@ button.weather-location:hover {
 
 .weather-widget-static .weather-details {
   border-top-color: var(--color-hover-overlay);
-}
-
-.weather-widget-static .weather-detail-card {
-  background: var(--color-input-bg);
 }
 
 .weather-widget-static .weather-detail-label,
