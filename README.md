@@ -12,9 +12,25 @@ Build and load the bundled Firefox extension — no server required:
 make extension
 ```
 
-This produces a `.zip` under `web-ext-artifacts/`. For permanent use,
-load it via `about:addons` → gear icon → "Install Add-on From File…". For
-quick local testing, use `about:debugging#/runtime/this-firefox` → "Load
+This produces an unsigned `.zip` under `web-ext-artifacts/`. Release
+Firefox only installs add-ons signed by Mozilla, so for permanent use
+either install Perron from addons.mozilla.org or sign your own build
+(free, nothing gets published):
+
+```bash
+# once: keys from https://addons.mozilla.org/developers/addon/api/key/
+# (.amo-keys is gitignored)
+cat > .amo-keys <<'KEYS'
+WEB_EXT_API_KEY=<JWT issuer>
+WEB_EXT_API_SECRET=<JWT secret>
+KEYS
+
+make sign
+```
+
+This writes a signed `.xpi` to `web-ext-artifacts/`; install it via
+`about:addons` → gear icon → "Install Add-on From File…". Each signed
+build needs a new `version` in `package.json`. For quick local testing, use `about:debugging#/runtime/this-firefox` → "Load
 Temporary Add-on…" → select `dist-extension/manifest.json` (temporary
 add-ons are removed when Firefox restarts).
 

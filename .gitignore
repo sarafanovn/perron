@@ -5,3 +5,4 @@ dist-extension/
 web-ext-artifacts/
 .DS_Store
 *.log
+.amo-keys

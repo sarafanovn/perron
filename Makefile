@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help up down restart rebuild logs ps print-url install dev build extension test
+.PHONY: help up down restart rebuild logs ps print-url install dev build extension sign test
 
 help: ## Show this help
 	@echo "Docker (no local Node/npm required):"
@@ -16,6 +16,7 @@ help: ## Show this help
 	@echo "  make dev      Start the Vite dev server"
 	@echo "  make build    Production build (dist/)"
 	@echo "  make extension Build and package the Firefox extension"
+	@echo "  make sign     Build and sign the extension for self-install (needs AMO API keys)"
 	@echo "  make test     Run the test suite"
 
 up: ## Build and start the site via Docker
@@ -59,6 +60,21 @@ build: ## Production build into dist/ (requires Node.js)
 extension: ## Build and package the Firefox extension into web-ext-artifacts/
 	npm run build:extension
 	npm run package:extension
+
+# AMO API keys for `make sign`, kept out of git (see README).
+-include .amo-keys
+export WEB_EXT_API_KEY WEB_EXT_API_SECRET
+
+sign: ## Build and sign the Firefox extension as an unlisted .xpi (needs AMO API keys)
+	@if [ -z "$$WEB_EXT_API_KEY" ] || [ -z "$$WEB_EXT_API_SECRET" ]; then \
+		echo "Missing AMO API keys. Create .amo-keys in the project root with:"; \
+		echo "  WEB_EXT_API_KEY=<JWT issuer>"; \
+		echo "  WEB_EXT_API_SECRET=<JWT secret>"; \
+		echo "Get them at https://addons.mozilla.org/developers/addon/api/key/"; \
+		exit 1; \
+	fi
+	npm run build:extension
+	npm run sign:extension
 
 test: ## Run the test suite (requires Node.js)
 	npm run test

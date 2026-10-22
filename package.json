@@ -1,13 +1,14 @@
 {
   "name": "perron",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:extension": "tsc -b && vite build --mode extension && node extension/write-manifest.mjs && node extension/generate-icons.mjs",
     "package:extension": "web-ext build --source-dir dist-extension --artifacts-dir web-ext-artifacts --overwrite-dest",
+    "sign:extension": "web-ext sign --source-dir dist-extension --artifacts-dir web-ext-artifacts --channel unlisted",
     "package:source": "mkdir -p web-ext-artifacts && git archive --format=zip --output web-ext-artifacts/perron-source.zip HEAD",
     "lint": "oxlint",
     "preview": "vite preview"
