@@ -1,0 +1,70 @@
+name: Firefox extension
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      HAS_AMO_KEYS: ${{ secrets.AMO_JWT_ISSUER != '' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build:extension
+      - run: npx web-ext lint --source-dir dist-extension
+      - run: npm run package:extension
+
+      # GitHub always serves artifacts as a zip, so upload the unpacked
+      # extension: the downloaded perron-extension.zip is then the
+      # installable add-on itself (manifest.json at its root), not a zip
+      # wrapped around web-ext's zip.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: perron-extension
+          path: dist-extension/
+
+      # Everything below runs only for version tags (e.g. v0.1.0).
+      - name: Check tag matches package.json version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          pkg_version=$(node -p "require('./package.json').version")
+          if [ "${GITHUB_REF_NAME#v}" != "$pkg_version" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $pkg_version"
+            exit 1
+          fi
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" web-ext-artifacts/perron-${GITHUB_REF_NAME#v}.zip --generate-notes
+
+      # AMO requires the human-readable source for minified/bundled code.
+      # Skipped until the AMO_JWT_* secrets are added to the repository.
+      - name: Submit to addons.mozilla.org
+        if: startsWith(github.ref, 'refs/tags/v') && env.HAS_AMO_KEYS == 'true'
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          npm run package:source
+          npx web-ext sign \
+            --source-dir dist-extension \
+            --artifacts-dir web-ext-artifacts \
+            --channel listed \
+            --upload-source-code web-ext-artifacts/perron-source.zip \
+            --approval-timeout 0

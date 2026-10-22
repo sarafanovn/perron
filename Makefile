@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help up down restart rebuild logs ps print-url install dev build test
+.PHONY: help up down restart rebuild logs ps print-url install dev build extension test
 
 help: ## Show this help
 	@echo "Docker (no local Node/npm required):"
@@ -15,6 +15,7 @@ help: ## Show this help
 	@echo "  make install  Install npm dependencies"
 	@echo "  make dev      Start the Vite dev server"
 	@echo "  make build    Production build (dist/)"
+	@echo "  make extension Build and package the Firefox extension"
 	@echo "  make test     Run the test suite"
 
 up: ## Build and start the site via Docker
@@ -54,6 +55,10 @@ dev: ## Start the Vite dev server (requires Node.js)
 
 build: ## Production build into dist/ (requires Node.js)
 	npm run build
+
+extension: ## Build and package the Firefox extension into web-ext-artifacts/
+	npm run build:extension
+	npm run package:extension
 
 test: ## Run the test suite (requires Node.js)
 	npm run test

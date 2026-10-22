@@ -1,0 +1,26 @@
+{
+  "manifest_version": 2,
+  "name": "Perron",
+  "version": "__VERSION__",
+  "description": "A customizable start page with draggable widgets.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "perron@sarafanovn.dev",
+      "data_collection_permissions": { "required": ["locationInfo"] }
+    }
+  },
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": [
+    "https://api.open-meteo.com/*",
+    "https://geocoding-api.open-meteo.com/*",
+    "https://api.mymemory.translated.net/*",
+    "https://www.google.com/*"
+  ]
+}
